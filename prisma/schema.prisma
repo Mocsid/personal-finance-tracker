@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model BillTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  amount      Float
+  dueDay      Int      // Day of month (1-31)
+  category    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  bills       Bill[]
+}
+
+model Bill {
+  id          String      @id @default(cuid())
+  templateId  String?
+  name        String
+  amount      Float
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      BillStatus  @default(UNPAID)
+  category    String
+  remarks     String?
+  month       Int         // 1-12
+  year        Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  template    BillTemplate? @relation(fields: [templateId], references: [id])
+}
+
+model Income {
+  id              String   @id @default(cuid())
+  source          String   // Where/who it's from
+  description     String?
+  amount          Float    // Gross amount
+  taxDeduction    Float    @default(0)
+  netAmount       Float    // After tax deduction
+  date            DateTime
+  month           Int      // 1-12
+  year            Int
+  category        String?  // Salary, Freelance, etc.
+  remarks         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum BillStatus {
+  PAID
+  UNPAID
+  OVERDUE
+  PARTIAL
+}
