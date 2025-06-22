@@ -20,9 +20,17 @@ export function CurrencyDisplay({ amount, className }: CurrencyDisplayProps) {
 
   if (!mounted) {
     // Return a placeholder during SSR that matches the expected format
+    // Use proper formatting with commas to match client-side rendering
+    const formattedAmount = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+    
     return (
-      <span className={className}>
-        ${amount.toFixed(2)}
+      <span className={className} suppressHydrationWarning>
+        {formattedAmount}
       </span>
     )
   }
