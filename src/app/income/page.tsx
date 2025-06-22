@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { IncomeForm } from '@/components/forms/income-form'
 import { DeleteConfirmDialog } from '@/components/ui/alert-dialog'
+import { SearchFilter } from '@/components/ui/search-filter'
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
+import { INCOME_CATEGORIES } from '@/lib/constants'
 import { Plus, DollarSign, Edit, Trash2, Calendar } from 'lucide-react'
 import type { Income } from '@/types'
 
 export default function IncomePage() {
   const [income, setIncome] = useState<Income[]>([])
+  const [filteredIncome, setFilteredIncome] = useState<Income[]>([])
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [selectedYear, setSelectedYear] = useState(getCurrentYear())
   const [showIncomeForm, setShowIncomeForm] = useState(false)
@@ -53,14 +56,63 @@ export default function IncomePage() {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        id: '3',
+        source: 'Investment Returns',
+        description: 'Stock dividends',
+        amount: 800,
+        taxDeduction: 120,
+        netAmount: 680,
+        date: new Date(2025, 5, 20),
+        month: 6,
+        year: 2025,
+        category: 'Investment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ]
     setIncome(mockIncome)
     setLoading(false)
   }, [])
 
-  const filteredIncome = income.filter(item => 
-    item.month === selectedMonth && item.year === selectedYear
-  )
+  // Filter income based on month/year and search/filter criteria
+  useEffect(() => {
+    let filtered = income.filter(item => 
+      item.month === selectedMonth && item.year === selectedYear
+    )
+    setFilteredIncome(filtered)
+  }, [income, selectedMonth, selectedYear])
+
+  const handleSearch = (query: string) => {
+    const monthlyIncome = income.filter(item => 
+      item.month === selectedMonth && item.year === selectedYear
+    )
+    
+    if (!query) {
+      setFilteredIncome(monthlyIncome)
+      return
+    }
+    
+    const filtered = monthlyIncome.filter(item =>
+      item.source.toLowerCase().includes(query.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(query.toLowerCase())) ||
+      (item.category && item.category.toLowerCase().includes(query.toLowerCase())) ||
+      (item.remarks && item.remarks.toLowerCase().includes(query.toLowerCase()))
+    )
+    setFilteredIncome(filtered)
+  }
+
+  const handleFilter = (filters: Record<string, string>) => {
+    let filtered = income.filter(item => 
+      item.month === selectedMonth && item.year === selectedYear
+    )
+    
+    if (filters.category) {
+      filtered = filtered.filter(item => item.category === filters.category)
+    }
+    
+    setFilteredIncome(filtered)
+  }
 
   const totalGross = filteredIncome.reduce((sum, item) => sum + item.amount, 0)
   const totalTax = filteredIncome.reduce((sum, item) => sum + item.taxDeduction, 0)
@@ -75,6 +127,10 @@ export default function IncomePage() {
     } as Income
     
     setIncome(prev => [...prev, income_item])
+    
+    if (window.toast) {
+      window.toast('Income added successfully!', 'success')
+    }
   }
 
   const handleEditIncome = (updatedIncome: Partial<Income>) => {
@@ -86,10 +142,18 @@ export default function IncomePage() {
       )
     )
     setEditingIncome(undefined)
+    
+    if (window.toast) {
+      window.toast('Income updated successfully!', 'success')
+    }
   }
 
   const handleDeleteIncome = (incomeId: string) => {
     setIncome(prev => prev.filter(item => item.id !== incomeId))
+    
+    if (window.toast) {
+      window.toast('Income deleted successfully!', 'success')
+    }
   }
 
   const openEditForm = (income: Income) => {
@@ -200,7 +264,16 @@ export default function IncomePage() {
             Track all your income sources and tax deductions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <SearchFilter
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            categories={INCOME_CATEGORIES}
+            placeholder="Search income by source, description, or category..."
+            showCategoryFilter={true}
+            showStatusFilter={false}
+          />
+          
           <div className="space-y-4">
             {filteredIncome.map((item) => {
               const taxPercentage = item.amount > 0 ? (item.taxDeduction / item.amount) * 100 : 0
@@ -262,7 +335,7 @@ export default function IncomePage() {
 
             {filteredIncome.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No income recorded for this month. Add your first income entry to get started.
+                No income found. Try adjusting your search or filters, or add your first income entry.
               </div>
             )}
           </div>

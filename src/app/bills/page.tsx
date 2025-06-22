@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { BillForm } from '@/components/forms/bill-form'
 import { DeleteConfirmDialog } from '@/components/ui/alert-dialog'
+import { SearchFilter } from '@/components/ui/search-filter'
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
+import { BILL_CATEGORIES } from '@/lib/constants'
 import { Plus, Check, X, Clock, Edit, Trash2, Calendar } from 'lucide-react'
 import type { Bill, BillStatus } from '@/types'
 
@@ -37,6 +39,7 @@ function getStatusColor(status: BillStatus) {
 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
+  const [filteredBills, setFilteredBills] = useState<Bill[]>([])
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [selectedYear, setSelectedYear] = useState(getCurrentYear())
   const [showBillForm, setShowBillForm] = useState(false)
@@ -88,6 +91,18 @@ export default function BillsPage() {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        id: '4',
+        name: 'Car Insurance',
+        amount: 200,
+        dueDate: new Date(2025, 5, 25),
+        status: 'OVERDUE',
+        category: 'Insurance',
+        month: 6,
+        year: 2025,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ]
     
     // Auto-mark overdue bills
@@ -102,9 +117,47 @@ export default function BillsPage() {
     setLoading(false)
   }, [])
 
-  const filteredBills = bills.filter(bill => 
-    bill.month === selectedMonth && bill.year === selectedYear
-  )
+  // Filter bills based on month/year and search/filter criteria
+  useEffect(() => {
+    let filtered = bills.filter(bill => 
+      bill.month === selectedMonth && bill.year === selectedYear
+    )
+    setFilteredBills(filtered)
+  }, [bills, selectedMonth, selectedYear])
+
+  const handleSearch = (query: string) => {
+    const monthlyBills = bills.filter(bill => 
+      bill.month === selectedMonth && bill.year === selectedYear
+    )
+    
+    if (!query) {
+      setFilteredBills(monthlyBills)
+      return
+    }
+    
+    const filtered = monthlyBills.filter(bill =>
+      bill.name.toLowerCase().includes(query.toLowerCase()) ||
+      bill.category.toLowerCase().includes(query.toLowerCase()) ||
+      (bill.remarks && bill.remarks.toLowerCase().includes(query.toLowerCase()))
+    )
+    setFilteredBills(filtered)
+  }
+
+  const handleFilter = (filters: Record<string, string>) => {
+    let filtered = bills.filter(bill => 
+      bill.month === selectedMonth && bill.year === selectedYear
+    )
+    
+    if (filters.category) {
+      filtered = filtered.filter(bill => bill.category === filters.category)
+    }
+    
+    if (filters.status) {
+      filtered = filtered.filter(bill => bill.status === filters.status)
+    }
+    
+    setFilteredBills(filtered)
+  }
 
   const totalAmount = filteredBills.reduce((sum, bill) => sum + bill.amount, 0)
   const paidAmount = filteredBills
@@ -121,6 +174,10 @@ export default function BillsPage() {
     } as Bill
     
     setBills(prev => [...prev, bill])
+    
+    if (window.toast) {
+      window.toast('Bill added successfully!', 'success')
+    }
   }
 
   const handleEditBill = (updatedBill: Partial<Bill>) => {
@@ -132,10 +189,18 @@ export default function BillsPage() {
       )
     )
     setEditingBill(undefined)
+    
+    if (window.toast) {
+      window.toast('Bill updated successfully!', 'success')
+    }
   }
 
   const handleDeleteBill = (billId: string) => {
     setBills(prev => prev.filter(item => item.id !== billId))
+    
+    if (window.toast) {
+      window.toast('Bill deleted successfully!', 'success')
+    }
   }
 
   const markAsPaid = (billId: string) => {
@@ -146,6 +211,10 @@ export default function BillsPage() {
           : bill
       )
     )
+    
+    if (window.toast) {
+      window.toast('Bill marked as paid!', 'success')
+    }
   }
 
   const markAsUnpaid = (billId: string) => {
@@ -156,6 +225,10 @@ export default function BillsPage() {
           : bill
       )
     )
+    
+    if (window.toast) {
+      window.toast('Bill marked as unpaid!', 'info')
+    }
   }
 
   const openEditForm = (bill: Bill) => {
@@ -232,6 +305,7 @@ export default function BillsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+            <p className="text-xs text-muted-foreground">{filteredBills.length} bills</p>
           </CardContent>
         </Card>
 
@@ -241,6 +315,9 @@ export default function BillsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</div>
+            <p className="text-xs text-muted-foreground">
+              {filteredBills.filter(b => b.status === 'PAID').length} bills paid
+            </p>
           </CardContent>
         </Card>
 
@@ -250,6 +327,9 @@ export default function BillsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatCurrency(unpaidAmount)}</div>
+            <p className="text-xs text-muted-foreground">
+              {filteredBills.filter(b => b.status !== 'PAID').length} bills remaining
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -261,7 +341,16 @@ export default function BillsPage() {
             Manage your monthly bills and payment status
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <SearchFilter
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            categories={BILL_CATEGORIES}
+            placeholder="Search bills by name, category, or remarks..."
+            showCategoryFilter={true}
+            showStatusFilter={true}
+          />
+          
           <div className="space-y-4">
             {filteredBills.map((bill) => (
               <div
@@ -331,7 +420,7 @@ export default function BillsPage() {
 
             {filteredBills.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                No bills found for this month. Add your first bill to get started.
+                No bills found. Try adjusting your search or filters, or add your first bill.
               </div>
             )}
           </div>
