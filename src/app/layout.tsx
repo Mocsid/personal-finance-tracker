@@ -4,6 +4,8 @@ import './globals.css'
 import { Navigation } from '@/components/navigation'
 import { ToastContainer } from '@/components/ui/toast'
 import { CurrencyProvider } from '@/components/currency/currency-provider'
+import { ThemeProvider } from '@/components/ui/theme-provider'
+import { KeyboardShortcuts } from '@/components/ui/keyboard-shortcuts'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,17 +20,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <CurrencyProvider>
-          <div className="min-h-screen bg-background">
-            <Navigation />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-            <ToastContainer />
-          </div>
-        </CurrencyProvider>
+        <ThemeProvider>
+          <CurrencyProvider>
+            <div className="min-h-screen bg-background">
+              <Navigation />
+              <main className="container mx-auto px-4 py-8">
+                {children}
+              </main>
+              <ToastContainer />
+              <KeyboardShortcuts />
+            </div>
+          </CurrencyProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

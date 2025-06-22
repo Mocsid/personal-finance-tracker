@@ -7,6 +7,7 @@ import { BillForm } from '@/components/forms/bill-form'
 import { DeleteConfirmDialog } from '@/components/ui/alert-dialog'
 import { SearchFilter } from '@/components/ui/search-filter'
 import { RecurringBillManager } from '@/components/bills/recurring-bill-manager'
+import { Tooltip } from '@/components/ui/tooltip'
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
 import { BILL_CATEGORIES } from '@/lib/constants'
 import { Plus, Check, X, Clock, Edit, Trash2, Calendar, Repeat } from 'lucide-react'
@@ -28,13 +29,13 @@ function getStatusIcon(status: BillStatus) {
 function getStatusColor(status: BillStatus) {
   switch (status) {
     case 'PAID':
-      return 'text-green-600 bg-green-50 border-green-200'
+      return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
     case 'UNPAID':
-      return 'text-orange-600 bg-orange-50 border-orange-200'
+      return 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800'
     case 'OVERDUE':
-      return 'text-red-600 bg-red-50 border-red-200'
+      return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
     case 'PARTIAL':
-      return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+      return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800'
   }
 }
 
@@ -52,6 +53,16 @@ export default function BillsPage() {
     bill: undefined
   })
   const [loading, setLoading] = useState(true)
+
+  // Listen for keyboard shortcuts
+  useEffect(() => {
+    const handleNewBill = () => {
+      setShowBillForm(true)
+    }
+
+    window.addEventListener('newBill', handleNewBill)
+    return () => window.removeEventListener('newBill', handleNewBill)
+  }, [])
 
   // Mock data for now - replace with API calls later
   useEffect(() => {
@@ -294,6 +305,7 @@ export default function BillsPage() {
   }
 
   const recurringBillsCount = filteredBills.filter(bill => bill.templateId).length
+  const overdueBillsCount = filteredBills.filter(bill => bill.status === 'OVERDUE').length
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>
@@ -306,6 +318,11 @@ export default function BillsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Bills</h1>
           <p className="text-muted-foreground">
             Manage your bills for {getMonthName(selectedMonth)} {selectedYear}
+            {overdueBillsCount > 0 && (
+              <span className="text-red-600 ml-2">
+                • {overdueBillsCount} overdue
+              </span>
+            )}
           </p>
         </div>
         
@@ -319,7 +336,7 @@ export default function BillsPage() {
                 setSelectedMonth(parseInt(month))
                 setSelectedYear(parseInt(year))
               }}
-              className="border rounded-md px-2 py-1 text-sm"
+              className="border rounded-md px-2 py-1 text-sm bg-background"
             >
               {generateMonthOptions().map(({ month, year }) => (
                 <option key={`${month}-${year}`} value={`${month}-${year}`}>
@@ -329,18 +346,22 @@ export default function BillsPage() {
             </select>
           </div>
           
-          <Button 
-            variant="outline" 
-            onClick={() => setShowRecurringManager(true)}
-          >
-            <Repeat className="h-4 w-4 mr-2" />
-            Recurring Bills
-          </Button>
+          <Tooltip content="Manage recurring bill templates">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRecurringManager(true)}
+            >
+              <Repeat className="h-4 w-4 mr-2" />
+              Recurring Bills
+            </Button>
+          </Tooltip>
           
-          <Button onClick={() => setShowBillForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Bill
-          </Button>
+          <Tooltip content="Add new bill (n b)">
+            <Button onClick={() => setShowBillForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Bill
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
@@ -409,7 +430,9 @@ export default function BillsPage() {
                   <div className="flex items-center space-x-2">
                     {getStatusIcon(bill.status)}
                     {bill.templateId && (
-                      <Repeat className="h-3 w-3 text-blue-600" title="Recurring bill" />
+                      <Tooltip content="This is a recurring bill">
+                        <Repeat className="h-3 w-3 text-blue-600" />
+                      </Tooltip>
                     )}
                   </div>
                   <div>
@@ -435,37 +458,45 @@ export default function BillsPage() {
                   
                   <div className="flex space-x-1">
                     {bill.status === 'PAID' ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAsUnpaid(bill.id)}
-                      >
-                        Mark Unpaid
-                      </Button>
+                      <Tooltip content="Mark as unpaid">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => markAsUnpaid(bill.id)}
+                        >
+                          Mark Unpaid
+                        </Button>
+                      </Tooltip>
                     ) : (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => markAsPaid(bill.id)}
-                      >
-                        Mark Paid
-                      </Button>
+                      <Tooltip content="Mark as paid">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => markAsPaid(bill.id)}
+                        >
+                          Mark Paid
+                        </Button>
+                      </Tooltip>
                     )}
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => openEditForm(bill)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => openDeleteDialog(bill)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Tooltip content="Edit bill">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => openEditForm(bill)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Delete bill">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => openDeleteDialog(bill)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               </div>

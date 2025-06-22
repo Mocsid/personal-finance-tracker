@@ -6,15 +6,17 @@ import { cn } from '@/lib/utils'
 import { DollarSign, Receipt, Home, TrendingUp, Download, Settings } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import { ThemeToggle } from './ui/theme-toggle'
+import { Tooltip } from './ui/tooltip'
 import { useCurrency } from './currency/currency-provider'
 import { CURRENCIES } from '@/lib/currency'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Bills', href: '/bills', icon: Receipt },
-  { name: 'Income', href: '/income', icon: DollarSign },
-  { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-  { name: 'Export', href: '/export', icon: Download },
+  { name: 'Dashboard', href: '/', icon: Home, shortcut: 'g d' },
+  { name: 'Bills', href: '/bills', icon: Receipt, shortcut: 'g b' },
+  { name: 'Income', href: '/income', icon: DollarSign, shortcut: 'g i' },
+  { name: 'Analytics', href: '/analytics', icon: TrendingUp, shortcut: 'g a' },
+  { name: 'Export', href: '/export', icon: Download, shortcut: 'g e' },
 ]
 
 export function Navigation() {
@@ -32,9 +34,11 @@ export function Navigation() {
             </Link>
             
             {/* Currency Indicator */}
-            <Badge variant="outline" className="hidden sm:flex">
-              {CURRENCIES[currency].symbol} {currency}
-            </Badge>
+            <Tooltip content={`Current currency: ${CURRENCIES[currency].name}`}>
+              <Badge variant="outline" className="hidden sm:flex">
+                {CURRENCIES[currency].symbol} {currency}
+              </Badge>
+            </Tooltip>
           </div>
           
           <div className="flex items-center space-x-1 sm:space-x-6">
@@ -42,29 +46,33 @@ export function Navigation() {
               const Icon = item.icon
               const isActive = pathname === item.href
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent',
-                    isActive
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.name}</span>
-                </Link>
+                <Tooltip key={item.name} content={`${item.name} (${item.shortcut})`}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      'flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent',
+                      isActive
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{item.name}</span>
+                  </Link>
+                </Tooltip>
               )
             })}
             
             <div className="flex items-center space-x-2 ml-6 pl-6 border-l">
-              <Link href="/settings">
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-2">Settings</span>
-                </Button>
-              </Link>
+              <ThemeToggle />
+              <Tooltip content="Settings (g s)">
+                <Link href="/settings">
+                  <Button variant="ghost" size="sm">
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-2">Settings</span>
+                  </Button>
+                </Link>
+              </Tooltip>
             </div>
           </div>
         </div>
