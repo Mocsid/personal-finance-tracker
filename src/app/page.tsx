@@ -6,7 +6,9 @@ import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { WelcomeWizard } from '@/components/onboarding/welcome-wizard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
+import { Tooltip } from '@/components/ui/tooltip'
+import { getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
+import { Info, TrendingUp, Target } from 'lucide-react'
 import useLocalStorage from '@/hooks/use-local-storage'
 
 // This would normally come from your database
@@ -24,8 +26,10 @@ export default function Dashboard() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useLocalStorage('hasCompletedOnboarding', false)
   const [userName] = useLocalStorage('userName', '')
   const [showWelcome, setShowWelcome] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     // Show welcome wizard for new users
     if (!hasCompletedOnboarding) {
       setShowWelcome(true)
@@ -41,9 +45,26 @@ export default function Dashboard() {
   const paidPercentage = (mockData.paidBills / mockData.totalBills) * 100
 
   const getGreeting = () => {
+    if (!mounted) return 'Dashboard'
     const hour = new Date().getHours()
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
     return userName ? `${greeting}, ${userName}!` : `${greeting}!`
+  }
+
+  const getFinancialHealthLevel = () => {
+    if (paidPercentage >= 80) return { level: 'Excellent', color: 'text-green-600', tip: 'Keep up the great work! You\'re on top of your finances.' }
+    if (paidPercentage >= 50) return { level: 'Good', color: 'text-orange-600', tip: 'You\'re doing well, but consider setting up auto-pay for recurring bills.' }
+    return { level: 'Needs Attention', color: 'text-red-600', tip: 'Focus on paying outstanding bills to improve your financial health.' }
+  }
+
+  const healthLevel = getFinancialHealthLevel()
+
+  if (!mounted) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -76,14 +97,24 @@ export default function Dashboard() {
         {/* Financial Health Indicator */}
         <Card>
           <CardHeader>
-            <CardTitle>Financial Health</CardTitle>
-            <CardDescription>Quick assessment of your financial status</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Financial Health</CardTitle>
+                <CardDescription>Quick assessment of your financial status</CardDescription>
+              </div>
+              <Tooltip content="Your financial health is calculated based on income vs bills ratio and payment completion rate">
+                <Info className="h-5 w-5 text-muted-foreground" />
+              </Tooltip>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Income vs Bills Ratio</p>
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Income vs Bills Ratio</p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Higher is better - shows how much income covers your bills
                   </p>
@@ -102,36 +133,47 @@ export default function Dashboard() {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Bill Payment Progress</p>
+                  <div className="flex items-center space-x-2">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Bill Payment Progress</p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Percentage of bills paid this month
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold">{Math.round(paidPercentage)}%</div>
-                  <div className={`text-xs ${
-                    paidPercentage >= 80 ? 'text-green-600' : paidPercentage >= 50 ? 'text-orange-600' : 'text-red-600'
-                  }`}>
-                    {paidPercentage >= 80 ? 'Excellent' : paidPercentage >= 50 ? 'Good' : 'Needs Attention'}
+                  <div className={`text-xs ${healthLevel.color}`}>
+                    {healthLevel.level}
                   </div>
                 </div>
               </div>
               
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                 <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-3 rounded-full transition-all duration-500 ${
                     paidPercentage >= 80 ? 'bg-green-500' : paidPercentage >= 50 ? 'bg-orange-500' : 'bg-red-500'
                   }`}
                   style={{ width: `${paidPercentage}%` }}
                 ></div>
               </div>
               
-              {hasCompletedOnboarding && paidPercentage < 50 && (
-                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 p-3 rounded-lg">
-                  <div className="text-sm text-orange-800 dark:text-orange-200">
-                    💡 <strong>Tip:</strong> Consider setting up automatic payments for recurring bills to improve your payment score.
+              {hasCompletedOnboarding && (
+                <Tooltip content={healthLevel.tip}>
+                  <div className={`p-3 rounded-lg border ${
+                    paidPercentage >= 80 ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' :
+                    paidPercentage >= 50 ? 'bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800' :
+                    'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'
+                  }`}>
+                    <div className={`text-sm ${
+                      paidPercentage >= 80 ? 'text-green-800 dark:text-green-200' :
+                      paidPercentage >= 50 ? 'text-orange-800 dark:text-orange-200' :
+                      'text-red-800 dark:text-red-200'
+                    }`}>
+                      💡 <strong>Tip:</strong> {healthLevel.tip}
+                    </div>
                   </div>
-                </div>
+                </Tooltip>
               )}
             </div>
           </CardContent>

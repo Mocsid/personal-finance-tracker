@@ -1,8 +1,9 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils'
-import { DollarSign, Receipt, Clock, Check } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { CurrencyDisplay } from '../ui/currency-display'
+import { Tooltip } from '../ui/tooltip'
+import { DollarSign, Receipt, Clock, Check, Info } from 'lucide-react'
 
 interface Activity {
   id: string
@@ -75,33 +76,55 @@ function getStatusColor(status?: Activity['status']) {
   }
 }
 
+function getActivityTooltip(activity: Activity): string {
+  switch (activity.type) {
+    case 'income':
+      return `Income received on ${activity.date.toLocaleDateString()}`
+    case 'bill_paid':
+      return `Bill payment completed on ${activity.date.toLocaleDateString()}`
+    case 'bill_due':
+      return `Bill due on ${activity.date.toLocaleDateString()}`
+    default:
+      return 'Recent financial activity'
+  }
+}
+
 export function RecentActivity() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest transactions and updates</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest transactions and updates</CardDescription>
+          </div>
+          <Tooltip content="Your most recent financial activities and upcoming due dates">
+            <Info className="h-4 w-4 text-muted-foreground" />
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {recentActivities.map((activity) => (
-            <div key={activity.id} className="flex items-center space-x-3">
-              <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
-              <div className="flex items-center space-x-2 flex-1">
-                {getActivityIcon(activity.type, activity.status)}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{activity.title}</div>
-                  {activity.amount && (
-                    <div className="text-xs text-muted-foreground">
-                      {formatCurrency(activity.amount)}
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {activity.date.toLocaleDateString()}
+            <Tooltip key={activity.id} content={getActivityTooltip(activity)}>
+              <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                <div className="flex items-center space-x-2 flex-1">
+                  {getActivityIcon(activity.type, activity.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{activity.title}</div>
+                    {activity.amount && (
+                      <div className="text-xs text-muted-foreground">
+                        <CurrencyDisplay amount={activity.amount} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {activity.date.toLocaleDateString()}
+                  </div>
                 </div>
               </div>
-            </div>
+            </Tooltip>
           ))}
         </div>
       </CardContent>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { DollarSign, Receipt, Home, TrendingUp, Download, Settings } from 'lucide-react'
+import { DollarSign, Receipt, Home, TrendingUp, Download, Settings, Keyboard } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { ThemeToggle } from './ui/theme-toggle'
@@ -28,13 +28,15 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/" className="text-xl font-bold flex items-center space-x-2">
-              <span className="text-2xl">💰</span>
-              <span className="hidden sm:inline">Finance Tracker</span>
-            </Link>
+            <Tooltip content="Personal Finance Tracker - Your privacy-first financial companion">
+              <Link href="/" className="text-xl font-bold flex items-center space-x-2">
+                <span className="text-2xl">💰</span>
+                <span className="hidden sm:inline">Finance Tracker</span>
+              </Link>
+            </Tooltip>
             
             {/* Currency Indicator */}
-            <Tooltip content={`Current currency: ${CURRENCIES[currency].name}`}>
+            <Tooltip content={`Current currency: ${CURRENCIES[currency].name}. Click Settings to change.`}>
               <Badge variant="outline" className="hidden sm:flex">
                 {CURRENCIES[currency].symbol} {currency}
               </Badge>
@@ -65,6 +67,15 @@ export function Navigation() {
             
             <div className="flex items-center space-x-2 ml-6 pl-6 border-l">
               <ThemeToggle />
+              <Tooltip content="View keyboard shortcuts (press ?)">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  const event = new KeyboardEvent('keydown', { key: '?' })
+                  window.dispatchEvent(event)
+                }}>
+                  <Keyboard className="h-4 w-4" />
+                  <span className="hidden lg:inline ml-2">Shortcuts</span>
+                </Button>
+              </Tooltip>
               <Tooltip content="Settings (g s)">
                 <Link href="/settings">
                   <Button variant="ghost" size="sm">

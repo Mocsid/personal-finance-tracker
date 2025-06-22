@@ -1,7 +1,8 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { formatCurrency } from '@/lib/utils'
+import { CurrencyDisplay } from '../ui/currency-display'
+import { Tooltip } from '../ui/tooltip'
 import { DollarSign, Receipt, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface FinancialSummaryProps {
@@ -27,11 +28,13 @@ export function FinancialSummary({
       <Card className="border-l-4 border-l-green-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <Tooltip content="Your total income after tax deductions for this month">
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </Tooltip>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {formatCurrency(totalIncome)}
+            <CurrencyDisplay amount={totalIncome} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             After tax deductions
@@ -42,14 +45,16 @@ export function FinancialSummary({
       <Card className="border-l-4 border-l-red-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Bills</CardTitle>
-          <Receipt className="h-4 w-4 text-muted-foreground" />
+          <Tooltip content="Your total bills and expenses for this month">
+            <Receipt className="h-4 w-4 text-muted-foreground" />
+          </Tooltip>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-red-600">
-            {formatCurrency(totalBills)}
+            <CurrencyDisplay amount={totalBills} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {Math.round(paidPercentage)}% paid ({formatCurrency(paidBills)})
+            {Math.round(paidPercentage)}% paid (<CurrencyDisplay amount={paidBills} />)
           </p>
         </CardContent>
       </Card>
@@ -59,13 +64,15 @@ export function FinancialSummary({
       }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Net Amount</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Tooltip content={`Your ${netAmount >= 0 ? 'surplus' : 'deficit'} after paying all bills`}>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </Tooltip>
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${
             netAmount >= 0 ? 'text-green-600' : 'text-red-600'
           }`}>
-            {formatCurrency(netAmount)}
+            <CurrencyDisplay amount={netAmount} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {netAmount >= 0 ? 'Surplus this month' : 'Deficit this month'}
@@ -76,11 +83,13 @@ export function FinancialSummary({
       <Card className="border-l-4 border-l-orange-500">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Unpaid Bills</CardTitle>
-          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          <Tooltip content="Bills that still need to be paid this month">
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </Tooltip>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-orange-600">
-            {formatCurrency(unpaidBills)}
+            <CurrencyDisplay amount={unpaidBills} />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {upcomingBills} upcoming this week
