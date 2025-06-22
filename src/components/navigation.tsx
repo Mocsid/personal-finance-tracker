@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { DollarSign, Receipt, Home, TrendingUp, Download, Settings } from 'lucide-react'
 import { Button } from './ui/button'
+import { Badge } from './ui/badge'
+import { useCurrency } from './currency/currency-provider'
+import { CURRENCIES } from '@/lib/currency'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -16,6 +19,7 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname()
+  const { currency } = useCurrency()
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
@@ -26,6 +30,11 @@ export function Navigation() {
               <span className="text-2xl">💰</span>
               <span className="hidden sm:inline">Finance Tracker</span>
             </Link>
+            
+            {/* Currency Indicator */}
+            <Badge variant="outline" className="hidden sm:flex">
+              {CURRENCIES[currency].symbol} {currency}
+            </Badge>
           </div>
           
           <div className="flex items-center space-x-1 sm:space-x-6">
@@ -49,10 +58,13 @@ export function Navigation() {
               )
             })}
             
-            <div className="hidden sm:flex items-center space-x-2 ml-6 pl-6 border-l">
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center space-x-2 ml-6 pl-6 border-l">
+              <Link href="/settings">
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">Settings</span>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
