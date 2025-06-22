@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Navigation } from '@/components/navigation'
+import { ToastContainer } from '@/components/ui/toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +24,7 @@ export default function RootLayout({
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>
+          <ToastContainer />
         </div>
       </body>
     </html>
