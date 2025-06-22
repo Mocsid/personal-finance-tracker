@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Select } from '../ui/select'
+import { Textarea } from '../ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { BILL_CATEGORIES, BILL_STATUSES } from '@/lib/constants'
 import type { Bill, BillStatus } from '@/types'
 
@@ -27,6 +27,7 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
     category: bill?.category || 'Housing',
     status: bill?.status || 'UNPAID',
     remarks: bill?.remarks || '',
+    isRecurring: false, // New field for recurring bills
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,7 +35,7 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
     
     const dueDate = new Date(formData.dueDate)
     
-    onSubmit({
+    const billData: Partial<Bill> = {
       ...bill,
       name: formData.name,
       amount: parseFloat(formData.amount),
@@ -45,8 +46,24 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
       month: dueDate.getMonth() + 1,
       year: dueDate.getFullYear(),
       paidDate: formData.status === 'PAID' ? new Date() : undefined,
-    })
+    }
+
+    // If this is a new recurring bill, also create a template
+    if (mode === 'add' && formData.isRecurring) {
+      // This would need to be handled by the parent component
+      // to create both a bill and a template
+      (billData as any).createTemplate = true
+      (billData as any).templateData = {
+        name: formData.name,
+        description: formData.remarks,
+        amount: parseFloat(formData.amount),
+        dueDay: dueDate.getDate(),
+        category: formData.category,
+        isActive: true,
+      }
+    }
     
+    onSubmit(billData)
     onOpenChange(false)
     
     // Reset form if adding new bill
@@ -58,11 +75,12 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
         category: 'Housing',
         status: 'UNPAID',
         remarks: '',
+        isRecurring: false,
       })
     }
   }
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -145,6 +163,21 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
             </div>
           </div>
 
+          {mode === 'add' && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isRecurring"
+                checked={formData.isRecurring}
+                onChange={(e) => handleChange('isRecurring', e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="isRecurring" className="text-sm">
+                This bill repeats every month (create recurring template)
+              </Label>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="remarks">Remarks</Label>
             <Textarea
@@ -155,6 +188,16 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
               rows={2}
             />
           </div>
+
+          {formData.isRecurring && mode === 'add' && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-md text-sm">
+              <div className="font-medium text-blue-800 mb-1">Recurring Bill</div>
+              <div className="text-blue-700">
+                This will create both a bill for this month and a template for automatic 
+                generation of future bills on the {new Date(formData.dueDate).getDate()}{new Date(formData.dueDate).getDate() === 1 ? 'st' : new Date(formData.dueDate).getDate() === 2 ? 'nd' : new Date(formData.dueDate).getDate() === 3 ? 'rd' : 'th'} of each month.
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" className="flex-1">

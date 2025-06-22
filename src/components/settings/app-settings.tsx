@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -8,18 +8,57 @@ import { Label } from '../ui/label'
 import { Select } from '../ui/select'
 import { Badge } from '../ui/badge'
 import { formatCurrency } from '@/lib/utils'
-import { Settings, Database, Download, Upload, Trash2 } from 'lucide-react'
+import { CURRENCIES, CurrencyCode } from '@/lib/currency'
+import { useCurrency } from '@/components/currency/currency-provider'
+import { Settings, Database, Download, Upload, Trash2, Coins } from 'lucide-react'
 
 export function AppSettings() {
-  const [currency, setCurrency] = useState('USD')
+  const { currency, setCurrency } = useCurrency()
   const [dateFormat, setDateFormat] = useState('MM/dd/yyyy')
   const [taxRate, setTaxRate] = useState('20')
   const [autoBackup, setAutoBackup] = useState(false)
 
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setDateFormat(localStorage.getItem('dateFormat') || 'MM/dd/yyyy')
+      setTaxRate(localStorage.getItem('defaultTaxRate') || '20')
+      setAutoBackup(localStorage.getItem('autoBackup') === 'true')
+    }
+  }, [])
+
+  const handleCurrencyChange = (newCurrency: CurrencyCode) => {
+    setCurrency(newCurrency)
+    if (window.toast) {
+      window.toast(`Currency changed to ${CURRENCIES[newCurrency].name}!`, 'success')
+    }
+  }
+
+  const handleDateFormatChange = (format: string) => {
+    setDateFormat(format)
+    localStorage.setItem('dateFormat', format)
+    if (window.toast) {
+      window.toast('Date format updated!', 'success')
+    }
+  }
+
+  const handleTaxRateChange = (rate: string) => {
+    setTaxRate(rate)
+    localStorage.setItem('defaultTaxRate', rate)
+    if (window.toast) {
+      window.toast('Default tax rate updated!', 'success')
+    }
+  }
+
   const handleExportBackup = () => {
     // This would export the entire database
     const backupData = {
-      settings: { currency, dateFormat, taxRate },
+      settings: { 
+        currency, 
+        dateFormat, 
+        taxRate,
+        autoBackup 
+      },
       exportDate: new Date().toISOString(),
       version: '1.0.0'
     }
@@ -50,10 +89,25 @@ export function AppSettings() {
         reader.onload = (e) => {
           try {
             const backupData = JSON.parse(e.target?.result as string)
-            // Here you would restore the data
+            
+            // Restore settings if available
+            if (backupData.settings) {
+              if (backupData.settings.currency) {
+                setCurrency(backupData.settings.currency)
+              }
+              if (backupData.settings.dateFormat) {
+                setDateFormat(backupData.settings.dateFormat)
+                localStorage.setItem('dateFormat', backupData.settings.dateFormat)
+              }
+              if (backupData.settings.taxRate) {
+                setTaxRate(backupData.settings.taxRate)
+                localStorage.setItem('defaultTaxRate', backupData.settings.taxRate)
+              }
+            }
+            
             console.log('Backup data:', backupData)
             if (window.toast) {
-              window.toast('Backup imported successfully!', 'success')
+              window.toast('Settings restored from backup!', 'success')
             }
           } catch (error) {
             if (window.toast) {
@@ -69,9 +123,20 @@ export function AppSettings() {
 
   const handleClearAllData = () => {
     if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-      // This would clear all data from the database
+      // Clear localStorage settings
+      localStorage.removeItem('currency')
+      localStorage.removeItem('dateFormat')
+      localStorage.removeItem('defaultTaxRate')
+      localStorage.removeItem('autoBackup')
+      
+      // Reset to defaults
+      setCurrency('USD')
+      setDateFormat('MM/dd/yyyy')
+      setTaxRate('20')
+      setAutoBackup(false)
+      
       if (window.toast) {
-        window.toast('All data cleared successfully', 'success')
+        window.toast('All data and settings cleared!', 'success')
       }
     }
   }
@@ -100,13 +165,13 @@ export function AppSettings() {
               <Select 
                 id="currency" 
                 value={currency} 
-                onChange={(e) => setCurrency(e.target.value)}
+                onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
               >
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-                <option value="JPY">JPY (¥)</option>
-                <option value="PHP">PHP (₱)</option>
+                {Object.entries(CURRENCIES).map(([code, info]) => (
+                  <option key={code} value={code}>
+                    {info.symbol} {info.name} ({code})
+                  </option>
+                ))}
               </Select>
               <p className="text-xs text-muted-foreground">
                 Example: {formatCurrency(1234.56)}
@@ -118,7 +183,7 @@ export function AppSettings() {
               <Select 
                 id="dateFormat" 
                 value={dateFormat} 
-                onChange={(e) => setDateFormat(e.target.value)}
+                onChange={(e) => handleDateFormatChange(e.target.value)}
               >
                 <option value="MM/dd/yyyy">MM/dd/yyyy (US)</option>
                 <option value="dd/MM/yyyy">dd/MM/yyyy (EU)</option>
@@ -138,7 +203,7 @@ export function AppSettings() {
                 max="100"
                 step="0.1"
                 value={taxRate}
-                onChange={(e) => setTaxRate(e.target.value)}
+                onChange={(e) => handleTaxRateChange(e.target.value)}
                 placeholder="20"
               />
               <p className="text-xs text-muted-foreground">
@@ -189,6 +254,41 @@ export function AppSettings() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Coins className="h-5 w-5" />
+            <span>Currency Information</span>
+          </CardTitle>
+          <CardDescription>Currently supported currencies</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {Object.entries(CURRENCIES).map(([code, info]) => (
+              <div 
+                key={code}
+                className={`p-3 border rounded-lg transition-colors ${
+                  currency === code ? 'border-primary bg-primary/5' : 'hover:bg-accent'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{info.name}</div>
+                    <div className="text-sm text-muted-foreground">{code}</div>
+                  </div>
+                  <div className="text-lg font-bold">{info.symbol}</div>
+                </div>
+                {currency === code && (
+                  <Badge variant="success" className="mt-2">
+                    Current
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

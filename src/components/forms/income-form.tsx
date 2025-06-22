@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useState, useEffect } from 'react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Select } from '../ui/select'
+import { Textarea } from '../ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { INCOME_CATEGORIES } from '@/lib/constants'
-import { getCurrentMonth, getCurrentYear } from '@/lib/utils'
+import { formatCurrency, getCurrentMonth, getCurrentYear } from '@/lib/utils'
 import type { Income } from '@/types'
 
 interface IncomeFormProps {
@@ -25,12 +25,20 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
     description: income?.description || '',
     amount: income?.amount?.toString() || '',
     taxPercentage: income?.amount && income?.taxDeduction ? 
-      ((income.taxDeduction / income.amount) * 100).toString() : '0',
+      ((income.taxDeduction / income.amount) * 100).toString() : '',
     date: income?.date ? income.date.toISOString().split('T')[0] : 
       new Date().toISOString().split('T')[0],
     category: income?.category || 'Salary',
     remarks: income?.remarks || '',
   })
+
+  // Load default tax rate from localStorage
+  useEffect(() => {
+    if (mode === 'add' && !income && typeof window !== 'undefined') {
+      const defaultTaxRate = localStorage.getItem('defaultTaxRate') || '20'
+      setFormData(prev => ({ ...prev, taxPercentage: defaultTaxRate }))
+    }
+  }, [mode, income])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,11 +68,14 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
     
     // Reset form if adding new income
     if (mode === 'add') {
+      const defaultTaxRate = typeof window !== 'undefined' ? 
+        localStorage.getItem('defaultTaxRate') || '20' : '20'
+      
       setFormData({
         source: '',
         description: '',
         amount: '',
-        taxPercentage: '0',
+        taxPercentage: defaultTaxRate,
         date: new Date().toISOString().split('T')[0],
         category: 'Salary',
         remarks: '',
@@ -136,7 +147,7 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
                 max="100"
                 value={formData.taxPercentage}
                 onChange={(e) => handleChange('taxPercentage', e.target.value)}
-                placeholder="0"
+                placeholder="20"
               />
             </div>
           </div>
@@ -145,15 +156,15 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
             <div className="bg-muted p-3 rounded-md text-sm">
               <div className="flex justify-between">
                 <span>Gross Amount:</span>
-                <span>${grossAmount.toFixed(2)}</span>
+                <span>{formatCurrency(grossAmount)}</span>
               </div>
               <div className="flex justify-between text-red-600">
                 <span>Tax Deduction ({taxPercentage}%):</span>
-                <span>-${taxAmount.toFixed(2)}</span>
+                <span>-{formatCurrency(taxAmount)}</span>
               </div>
               <div className="flex justify-between font-semibold text-green-600 border-t mt-1 pt-1">
                 <span>Net Amount:</span>
-                <span>${netAmount.toFixed(2)}</span>
+                <span>{formatCurrency(netAmount)}</span>
               </div>
             </div>
           )}
