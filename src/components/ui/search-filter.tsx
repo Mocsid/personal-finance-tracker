@@ -72,6 +72,12 @@ export function SearchFilter({
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            role="searchbox"
+            aria-label="Search income entries"
           />
         </div>
         <Button
