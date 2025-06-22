@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button'
 import { BillForm } from '@/components/forms/bill-form'
 import { DeleteConfirmDialog } from '@/components/ui/alert-dialog'
 import { SearchFilter } from '@/components/ui/search-filter'
+import { RecurringBillManager } from '@/components/bills/recurring-bill-manager'
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
 import { BILL_CATEGORIES } from '@/lib/constants'
-import { Plus, Check, X, Clock, Edit, Trash2, Calendar } from 'lucide-react'
-import type { Bill, BillStatus } from '@/types'
+import { Plus, Check, X, Clock, Edit, Trash2, Calendar, Repeat } from 'lucide-react'
+import type { Bill, BillStatus, BillTemplate, ExtendedBill } from '@/types'
 
 function getStatusIcon(status: BillStatus) {
   switch (status) {
@@ -39,10 +40,12 @@ function getStatusColor(status: BillStatus) {
 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
+  const [templates, setTemplates] = useState<BillTemplate[]>([])
   const [filteredBills, setFilteredBills] = useState<Bill[]>([])
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [selectedYear, setSelectedYear] = useState(getCurrentYear())
   const [showBillForm, setShowBillForm] = useState(false)
+  const [showRecurringManager, setShowRecurringManager] = useState(false)
   const [editingBill, setEditingBill] = useState<Bill | undefined>()
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; bill?: Bill }>({
     open: false,
@@ -55,6 +58,7 @@ export default function BillsPage() {
     const mockBills: Bill[] = [
       {
         id: '1',
+        templateId: 'template-1',
         name: 'Rent',
         amount: 1200,
         dueDate: new Date(2025, 5, 1),
@@ -69,21 +73,23 @@ export default function BillsPage() {
       },
       {
         id: '2',
-        name: 'Electricity',
-        amount: 150,
+        templateId: 'template-2',
+        name: 'Internet',
+        amount: 80,
         dueDate: new Date(2025, 5, 15),
-        status: 'UNPAID',
+        status: 'PAID',
         category: 'Utilities',
         month: 6,
         year: 2025,
+        paidDate: new Date(2025, 5, 14),
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: '3',
-        name: 'Internet',
-        amount: 80,
-        dueDate: new Date(2025, 5, 20),
+        name: 'Electricity',
+        amount: 150,
+        dueDate: new Date(2025, 5, 15),
         status: 'UNPAID',
         category: 'Utilities',
         month: 6,
@@ -165,7 +171,7 @@ export default function BillsPage() {
     .reduce((sum, bill) => sum + bill.amount, 0)
   const unpaidAmount = totalAmount - paidAmount
 
-  const handleAddBill = (newBill: Partial<Bill>) => {
+  const handleAddBill = (newBill: Partial<ExtendedBill>) => {
     const bill: Bill = {
       id: Math.random().toString(36).substr(2, 9),
       createdAt: new Date(),
@@ -175,9 +181,39 @@ export default function BillsPage() {
     
     setBills(prev => [...prev, bill])
     
-    if (window.toast) {
-      window.toast('Bill added successfully!', 'success')
+    // If this is a recurring bill, also create a template
+    if (newBill.createTemplate && newBill.templateData) {
+      const template: BillTemplate = {
+        id: Math.random().toString(36).substr(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...newBill.templateData
+      } as BillTemplate
+      
+      setTemplates(prev => [...prev, template])
+      
+      // Link the bill to the template
+      bill.templateId = template.id
+      
+      if (window.toast) {
+        window.toast('Bill and recurring template created successfully!', 'success')
+      }
+    } else {
+      if (window.toast) {
+        window.toast('Bill added successfully!', 'success')
+      }
     }
+  }
+
+  const handleGenerateBills = (newBills: Partial<Bill>[]) => {
+    const billsToAdd: Bill[] = newBills.map(billData => ({
+      id: Math.random().toString(36).substr(2, 9),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...billData
+    })) as Bill[]
+    
+    setBills(prev => [...prev, ...billsToAdd])
   }
 
   const handleEditBill = (updatedBill: Partial<Bill>) => {
@@ -257,6 +293,8 @@ export default function BillsPage() {
     return options
   }
 
+  const recurringBillsCount = filteredBills.filter(bill => bill.templateId).length
+
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>
   }
@@ -291,6 +329,14 @@ export default function BillsPage() {
             </select>
           </div>
           
+          <Button 
+            variant="outline" 
+            onClick={() => setShowRecurringManager(true)}
+          >
+            <Repeat className="h-4 w-4 mr-2" />
+            Recurring Bills
+          </Button>
+          
           <Button onClick={() => setShowBillForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Bill
@@ -305,7 +351,9 @@ export default function BillsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
-            <p className="text-xs text-muted-foreground">{filteredBills.length} bills</p>
+            <p className="text-xs text-muted-foreground">
+              {filteredBills.length} bills ({recurringBillsCount} recurring)
+            </p>
           </CardContent>
         </Card>
 
@@ -358,7 +406,12 @@ export default function BillsPage() {
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center space-x-4">
-                  {getStatusIcon(bill.status)}
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(bill.status)}
+                    {bill.templateId && (
+                      <Repeat className="h-3 w-3 text-blue-600" title="Recurring bill" />
+                    )}
+                  </div>
                   <div>
                     <div className="font-medium">{bill.name}</div>
                     <div className="text-sm text-muted-foreground">
@@ -426,6 +479,23 @@ export default function BillsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Recurring Bills Manager Modal */}
+      {showRecurringManager && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Recurring Bills Management</h2>
+                <Button variant="ghost" onClick={() => setShowRecurringManager(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <RecurringBillManager onGenerateBills={handleGenerateBills} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <BillForm
         open={showBillForm}

@@ -5,7 +5,7 @@ export interface BillTemplate {
   name: string
   description?: string
   amount: number
-  dueDay: number
+  dueDay: number // Day of month (1-31)
   category: string
   isActive: boolean
   createdAt: Date
@@ -26,6 +26,7 @@ export interface Bill {
   year: number
   createdAt: Date
   updatedAt: Date
+  template?: BillTemplate
 }
 
 export interface Income {
@@ -52,4 +53,15 @@ export interface MonthlyOverview {
   paidBills: number
   unpaidBills: number
   netAmount: number
+}
+
+// Extended types for recurring functionality
+export interface RecurringBillData {
+  createTemplate: boolean
+  templateData: Partial<BillTemplate>
+}
+
+export interface ExtendedBill extends Bill {
+  createTemplate?: boolean
+  templateData?: Partial<BillTemplate>
 }
