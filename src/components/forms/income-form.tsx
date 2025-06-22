@@ -109,6 +109,7 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
               value={formData.source}
               onChange={(e) => handleChange('source', e.target.value)}
               placeholder="e.g., Company Name"
+              autoComplete="organization"
               required
             />
           </div>
@@ -120,6 +121,7 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="e.g., Monthly salary"
+              autoComplete="off"
             />
           </div>
 
@@ -129,10 +131,12 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
               <Input
                 id="amount"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => handleChange('amount', e.target.value)}
                 placeholder="0.00"
+                autoComplete="off"
                 required
               />
             </div>
@@ -142,12 +146,14 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
               <Input
                 id="taxPercentage"
                 type="number"
+                inputMode="decimal"
                 step="0.1"
                 min="0"
                 max="100"
                 value={formData.taxPercentage}
                 onChange={(e) => handleChange('taxPercentage', e.target.value)}
                 placeholder="20"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -177,6 +183,7 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
                 type="date"
                 value={formData.date}
                 onChange={(e) => handleChange('date', e.target.value)}
+                autoComplete="off"
                 required
               />
             </div>
@@ -205,6 +212,9 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
               onChange={(e) => handleChange('remarks', e.target.value)}
               placeholder="Optional notes..."
               rows={2}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
             />
           </div>
 
