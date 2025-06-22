@@ -1,14 +1,36 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { formatCurrency as formatCurrencyIntl } from './currency'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Use the dynamic currency formatter
+// Safe currency formatting that works during SSR
 export function formatCurrency(amount: number): string {
-  return formatCurrencyIntl(amount)
+  // During SSR, use USD as default to prevent hydration mismatch
+  if (typeof window === 'undefined') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
+  
+  // On client, use the dynamic currency from our currency system
+  const { formatCurrency: formatCurrencyDynamic } = require('./currency')
+  return formatCurrencyDynamic(amount)
+}
+
+// Safe currency formatting for components that need dynamic updates
+export function formatCurrencyDynamic(amount: number, currency?: string): string {
+  if (typeof window === 'undefined') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
+  
+  const { formatCurrency: formatCurrencyIntl } = require('./currency')
+  return formatCurrencyIntl(amount, currency)
 }
 
 export function getMonthName(month: number): string {
