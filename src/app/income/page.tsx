@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { IncomeForm } from '@/components/forms/income-form'
 import { DeleteConfirmDialog } from '@/components/ui/alert-dialog'
 import { SearchFilter } from '@/components/ui/search-filter'
+import { Tooltip } from '@/components/ui/tooltip'
 import { formatCurrency, getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
 import { INCOME_CATEGORIES } from '@/lib/constants'
 import { Plus, DollarSign, Edit, Trash2, Calendar } from 'lucide-react'
@@ -23,6 +24,16 @@ export default function IncomePage() {
     income: undefined
   })
   const [loading, setLoading] = useState(true)
+
+  // Listen for keyboard shortcuts
+  useEffect(() => {
+    const handleNewIncome = () => {
+      setShowIncomeForm(true)
+    }
+
+    window.addEventListener('newIncome', handleNewIncome)
+    return () => window.removeEventListener('newIncome', handleNewIncome)
+  }, [])
 
   // Mock data for now - replace with API calls later
   useEffect(() => {
@@ -117,6 +128,7 @@ export default function IncomePage() {
   const totalGross = filteredIncome.reduce((sum, item) => sum + item.amount, 0)
   const totalTax = filteredIncome.reduce((sum, item) => sum + item.taxDeduction, 0)
   const totalNet = filteredIncome.reduce((sum, item) => sum + item.netAmount, 0)
+  const averageTaxRate = totalGross > 0 ? (totalTax / totalGross) * 100 : 0
 
   const handleAddIncome = (newIncome: Partial<Income>) => {
     const income_item: Income = {
@@ -193,6 +205,11 @@ export default function IncomePage() {
           <h1 className="text-3xl font-bold tracking-tight">Income</h1>
           <p className="text-muted-foreground">
             Track your income for {getMonthName(selectedMonth)} {selectedYear}
+            {averageTaxRate > 0 && (
+              <span className="text-blue-600 ml-2">
+                • {averageTaxRate.toFixed(1)}% avg tax rate
+              </span>
+            )}
           </p>
         </div>
         
@@ -206,7 +223,7 @@ export default function IncomePage() {
                 setSelectedMonth(parseInt(month))
                 setSelectedYear(parseInt(year))
               }}
-              className="border rounded-md px-2 py-1 text-sm"
+              className="border rounded-md px-2 py-1 text-sm bg-background"
             >
               {generateMonthOptions().map(({ month, year }) => (
                 <option key={`${month}-${year}`} value={`${month}-${year}`}>
@@ -216,10 +233,12 @@ export default function IncomePage() {
             </select>
           </div>
           
-          <Button onClick={() => setShowIncomeForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Income
-          </Button>
+          <Tooltip content="Add new income (n i)">
+            <Button onClick={() => setShowIncomeForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Income
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
@@ -230,7 +249,9 @@ export default function IncomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalGross)}</div>
-            <p className="text-xs text-muted-foreground">Before tax deductions</p>
+            <p className="text-xs text-muted-foreground">
+              Before tax deductions ({filteredIncome.length} sources)
+            </p>
           </CardContent>
         </Card>
 
@@ -241,7 +262,7 @@ export default function IncomePage() {
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatCurrency(totalTax)}</div>
             <p className="text-xs text-muted-foreground">
-              {totalGross > 0 ? `${((totalTax / totalGross) * 100).toFixed(1)}%` : '0%'} of gross
+              {totalGross > 0 ? `${averageTaxRate.toFixed(1)}%` : '0%'} of gross income
             </p>
           </CardContent>
         </Card>
@@ -252,7 +273,9 @@ export default function IncomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalNet)}</div>
-            <p className="text-xs text-muted-foreground">After tax deductions</p>
+            <p className="text-xs text-muted-foreground">
+              After all tax deductions
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -312,21 +335,25 @@ export default function IncomePage() {
                     </div>
                     
                     <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => openEditForm(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => openDeleteDialog(item)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Tooltip content="Edit income">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openEditForm(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Delete income">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openDeleteDialog(item)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
@@ -339,6 +366,19 @@ export default function IncomePage() {
               </div>
             )}
           </div>
+
+          {filteredIncome.length > 0 && totalTax > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-lg mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-800 dark:text-blue-200">
+                  💡 <strong>Tax Insight:</strong> You're paying {averageTaxRate.toFixed(1)}% in taxes this month
+                </span>
+                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                  {formatCurrency(totalTax)} total deductions
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

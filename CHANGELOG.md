@@ -5,117 +5,146 @@ All notable changes to the Personal Finance Tracker will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2025-06-22
+## [1.2.0] - 2025-06-22
 
-### Added
-- **Core Application Structure**
-  - Next.js 14 with TypeScript setup
-  - Prisma ORM with SQLite database
-  - Tailwind CSS with shadcn/ui components
-  - Responsive design for mobile and desktop
+### Added - Advanced Features
+- **🌏 Dynamic Currency System**
+  - 10 supported currencies (USD, EUR, GBP, JPY, PHP, AUD, CAD, CHF, CNY, INR)
+  - Real-time currency switching with instant UI updates
+  - Currency indicator in navigation bar
+  - Proper formatting for different currency types
 
-- **Dashboard Features**
-  - Monthly financial overview with key metrics
-  - Income vs bills analysis
-  - Financial health indicators
-  - Recent activity feed
-  - Quick action shortcuts
+- **🔁 Recurring Bills Management**
+  - Bill templates for automated monthly generation
+  - One-click bill generation for next month
+  - Active/pause toggle for templates
+  - Automatic linking between bills and templates
+  - Visual indicators for recurring bills
 
-- **Bill Management**
-  - Add, edit, and delete bills
-  - Mark bills as paid/unpaid functionality
-  - Automatic overdue bill detection
-  - Category-based organization
-  - Search and filter capabilities
-  - Monthly navigation with dropdowns
-  - Status indicators (PAID, UNPAID, OVERDUE, PARTIAL)
+- **🎨 Dark Mode Support**
+  - System, light, and dark theme options
+  - Automatic system theme detection
+  - Smooth theme transitions
+  - All components optimized for dark mode
 
-- **Income Tracking**
-  - Record income from multiple sources
-  - Percentage-based tax calculations
-  - Gross and net amount tracking
-  - Category-based income organization
-  - Search and filter functionality
-  - Tax deduction summaries
+- **🚀 Welcome Wizard**
+  - Guided onboarding for new users
+  - Personalized setup (name, currency, tax rate)
+  - Privacy education and feature overview
+  - Smart first-time user detection
 
-- **Analytics & Insights**
-  - Month-over-month comparison charts
-  - Category breakdown for bills and income
-  - Financial ratios and trends
-  - Visual progress indicators
-  - Income coverage analysis
+- **⌨️ Keyboard Shortcuts**
+  - Navigation shortcuts (g + d/b/i/a/e/s)
+  - Quick actions (n + b/i for new items)
+  - Help modal (?)
+  - Visual sequence indicators
 
-- **Data Export**
-  - Export to JSON (complete data)
-  - Export to CSV (spreadsheet format)
-  - Current month or all-time data options
-  - Privacy-focused local downloads
-  - Backup and restore capabilities
+- **📊 Enhanced Analytics**
+  - Tax rate insights and breakdowns
+  - Improved category analysis
+  - Better visual indicators
+  - Average tax rate calculations
 
+### Improved - User Experience
+- **💱 Smart Tax Calculations**
+  - Percentage-based tax input with real-time preview
+  - Default tax rate from settings
+  - Visual calculation breakdown in forms
+  - Better tax insights on income page
+
+- **🔍 Enhanced Search & Filtering**
+  - Improved search across all content
+  - Better filter combinations
+  - Clear filter states and reset options
+  - Search highlighting and suggestions
+
+- **📱 Mobile Optimizations**
+  - Better responsive design
+  - Touch-friendly interactions
+  - Optimized modal sizes
+  - Improved navigation on small screens
+
+- **🚔 Tooltips & Help**
+  - Contextual tooltips throughout the app
+  - Keyboard shortcut hints
+  - Feature explanations
+  - Better accessibility
+
+### Technical Improvements
+- **🏧 Component Architecture**
+  - Currency provider context
+  - Theme provider system
+  - Custom hooks for local storage
+  - Better component composition
+
+- **💾 Data Management**
+  - Enhanced local storage utilities
+  - Better error handling
+  - Improved data validation
+  - Settings persistence
+
+- **🎨 Design System**
+  - Consistent color schemes
+  - Better spacing and typography
+  - Dark mode color palette
+  - Improved component variants
+
+### Security & Privacy
+- **🔒 Enhanced Privacy Protection**
+  - Stronger gitignore rules
+  - Better local storage management
+  - No external dependencies for sensitive data
+  - Clear privacy indicators
+
+### Bug Fixes
+- Fixed edit button functionality
+- Resolved currency display issues
+- Improved form validation
+- Better error state handling
+- Fixed responsive layout issues
+
+---
+
+## [1.0.0] - 2025-06-22 (Initial Release)
+
+### Added - Core Features
+- **Dashboard** with monthly financial overview
+- **Bill Management** with CRUD operations
+- **Income Tracking** with tax calculations
+- **Analytics & Insights** with trends
+- **Data Export** functionality
 - **Settings & Customization**
-  - Currency selection (USD, EUR, GBP, JPY, PHP)
-  - Date format preferences
-  - Default tax rate configuration
-  - Database backup/restore functionality
-  - Complete data management tools
-
-- **User Experience Enhancements**
-  - Toast notifications for user feedback
-  - Loading states for better UX
-  - Confirmation dialogs for destructive actions
-  - Responsive navigation with mobile support
-  - Search functionality across all pages
-  - Month/year navigation
-
-- **Privacy & Security**
-  - 100% local storage with SQLite
-  - No external API calls for sensitive data
-  - Database files excluded from git
-  - Open source and transparent code
-  - Easy backup and migration
+- **Privacy-First** architecture
 
 ### Technical Implementation
-- **Database Schema**
-  - BillTemplate model for recurring bills
-  - Bill model with status tracking
-  - Income model with tax calculations
-  - Proper indexing and relationships
-
-- **Component Architecture**
-  - Reusable UI components with shadcn/ui
-  - Form components with validation
-  - Modal dialogs for CRUD operations
-  - Search and filter components
-
-- **Development Tools**
-  - ESLint configuration
-  - TypeScript strict mode
-  - Prisma Studio for database management
-  - Tailwind CSS for styling
-
-### Security
+- Next.js 14 with TypeScript
+- Prisma ORM with SQLite
+- Tailwind CSS with shadcn/ui
+- Responsive design
 - Local-only data storage
-- No telemetry or tracking
-- Secure file permissions
-- Environment variable protection
 
 ---
 
-## Development Notes
+## Upcoming Features
 
-### Known Issues
-- None at this time
+### v1.3.0 - Smart Features
+- 🤖 AI-powered food tracking integration
+- 📷 Receipt scanning with OCR
+- 📈 Advanced data visualizations
+- 🔔 Smart notifications and reminders
 
-### Planned Features
-- Recurring bill templates
-- Budget planning and tracking
-- Data visualization charts
-- Multi-currency support
-- Notification system
+### v1.4.0 - Extended Functionality
+- 🏦 Bank account reconciliation
+- 📊 Investment tracking
+- 🎯 Budget planning and goals
+- 📄 PDF report generation
 
-### Breaking Changes
-- None at this time (initial release)
+### v1.5.0 - Platform Expansion
+- 📱 Mobile app (React Native)
+- 🔌 API for integrations
+- ☁️ Optional cloud sync
+- 👥 Multi-user support
 
 ---
 
-**Note**: This is the initial release of the Personal Finance Tracker. Future versions will maintain backward compatibility where possible.
+**Note**: All versions maintain backward compatibility and privacy-first principles.
