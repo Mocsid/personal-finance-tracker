@@ -145,6 +145,20 @@ A comprehensive, privacy-focused personal finance tracker with **recurring bills
 
 ---
 
+## ⚡️ One-Click Start (Windows)
+
+For the easiest setup on Windows, just double-click the `personal-income-tracker.bat` file in the project root. This will:
+- Install dependencies (if needed)
+- Set up the database (if needed)
+- Start the development server automatically
+
+**No terminal required!**
+
+For Mac/Linux or advanced users, you can also run:
+```bash
+npm run start-app
+```
+
 ## 🛠️ Tech Stack
 
 ### Frontend
