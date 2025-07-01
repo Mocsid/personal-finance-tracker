@@ -64,75 +64,21 @@ export default function BillsPage() {
     return () => window.removeEventListener('newBill', handleNewBill)
   }, [])
 
-  // Mock data for now - replace with API calls later
+  // Fetch bills from API
   useEffect(() => {
-    const mockBills: Bill[] = [
-      {
-        id: '1',
-        templateId: 'template-1',
-        name: 'Rent',
-        amount: 1200,
-        dueDate: new Date(2025, 5, 1),
-        status: 'PAID',
-        category: 'Housing',
-        remarks: 'Paid via bank transfer',
-        month: 6,
-        year: 2025,
-        paidDate: new Date(2025, 4, 30),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        templateId: 'template-2',
-        name: 'Internet',
-        amount: 80,
-        dueDate: new Date(2025, 5, 15),
-        status: 'PAID',
-        category: 'Utilities',
-        month: 6,
-        year: 2025,
-        paidDate: new Date(2025, 5, 14),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '3',
-        name: 'Electricity',
-        amount: 150,
-        dueDate: new Date(2025, 5, 15),
-        status: 'UNPAID',
-        category: 'Utilities',
-        month: 6,
-        year: 2025,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '4',
-        name: 'Car Insurance',
-        amount: 200,
-        dueDate: new Date(2025, 5, 25),
-        status: 'OVERDUE',
-        category: 'Insurance',
-        month: 6,
-        year: 2025,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]
-    
-    // Auto-mark overdue bills
-    const updatedBills = mockBills.map(bill => {
-      if (bill.status === 'UNPAID' && new Date() > bill.dueDate) {
-        return { ...bill, status: 'OVERDUE' as BillStatus }
+    async function fetchBills() {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/bills?month=${selectedMonth}&year=${selectedYear}`)
+        const data = await res.json()
+        setBills(data)
+      } catch (e) {
+        setBills([])
       }
-      return bill
-    })
-    
-    setBills(updatedBills)
-    setLoading(false)
-  }, [])
+      setLoading(false)
+    }
+    fetchBills()
+  }, [selectedMonth, selectedYear])
 
   // Filter bills based on month/year and search/filter criteria
   useEffect(() => {
@@ -182,17 +128,31 @@ export default function BillsPage() {
     .reduce((sum, bill) => sum + bill.amount, 0)
   const unpaidAmount = totalAmount - paidAmount
 
-  const handleAddBill = (newBill: Partial<ExtendedBill>) => {
-    const bill: Bill = {
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...newBill
-    } as Bill
-    
-    setBills(prev => [...prev, bill])
-    
-    // If this is a recurring bill, also create a template
+  const handleAddBill = async (newBill: Partial<ExtendedBill>) => {
+    // Prepare bill data for API
+    const billPayload = {
+      name: newBill.name,
+      amount: String(newBill.amount),
+      dueDate: newBill.dueDate instanceof Date ? newBill.dueDate.toISOString() : newBill.dueDate,
+      category: newBill.category,
+      remarks: newBill.remarks,
+      month: newBill.month,
+      year: newBill.year,
+    }
+    try {
+      const res = await fetch('/api/bills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billPayload),
+      })
+      if (!res.ok) throw new Error('Failed to save bill')
+      const savedBill = await res.json()
+      setBills(prev => [...prev, savedBill])
+      if (window.toast) window.toast('Bill added successfully!', 'success')
+    } catch (e) {
+      if (window.toast) window.toast('Failed to save bill', 'error')
+    }
+    // If this is a recurring bill, also create a template (local only)
     if (newBill.createTemplate && newBill.templateData) {
       const template: BillTemplate = {
         id: Math.random().toString(36).substr(2, 9),
@@ -200,19 +160,7 @@ export default function BillsPage() {
         updatedAt: new Date(),
         ...newBill.templateData
       } as BillTemplate
-      
       setTemplates(prev => [...prev, template])
-      
-      // Link the bill to the template
-      bill.templateId = template.id
-      
-      if (window.toast) {
-        window.toast('Bill and recurring template created successfully!', 'success')
-      }
-    } else {
-      if (window.toast) {
-        window.toast('Bill added successfully!', 'success')
-      }
     }
   }
 
@@ -242,11 +190,13 @@ export default function BillsPage() {
     }
   }
 
-  const handleDeleteBill = (billId: string) => {
-    setBills(prev => prev.filter(item => item.id !== billId))
-    
-    if (window.toast) {
-      window.toast('Bill deleted successfully!', 'success')
+  const handleDeleteBill = async (billId: string) => {
+    try {
+      await fetch(`/api/bills?id=${billId}`, { method: 'DELETE' })
+      setBills(prev => prev.filter(item => item.id !== billId))
+      if (window.toast) window.toast('Bill deleted successfully!', 'success')
+    } catch (e) {
+      if (window.toast) window.toast('Failed to delete bill', 'error')
     }
   }
 
@@ -438,7 +388,7 @@ export default function BillsPage() {
                   <div>
                     <div className="font-medium">{bill.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      Due: {bill.dueDate.toLocaleDateString()} • {bill.category}
+                      Due: {new Date(bill.dueDate).toLocaleDateString()} • {bill.category}
                     </div>
                     {bill.remarks && (
                       <div className="text-xs text-muted-foreground mt-1">

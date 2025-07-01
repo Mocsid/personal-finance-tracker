@@ -61,3 +61,21 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) {
+      return NextResponse.json({ error: 'Missing income id' }, { status: 400 })
+    }
+    await prisma.income.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting income:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete income' },
+      { status: 500 }
+    )
+  }
+}
