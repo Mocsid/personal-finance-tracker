@@ -97,41 +97,100 @@ export default function IncomePage() {
   const totalNet = filteredIncome.reduce((sum, item) => sum + item.netAmount, 0)
   const averageTaxRate = totalGross > 0 ? (totalTax / totalGross) * 100 : 0
 
-  const handleAddIncome = (newIncome: Partial<Income>) => {
-    const income_item: Income = {
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...newIncome
-    } as Income
-    
-    setIncome(prev => [...prev, income_item])
-    
-    if (window.toast) {
-      window.toast('Income added successfully!', 'success')
+  const handleAddIncome = async (newIncome: Partial<Income>) => {
+    try {
+      const incomePayload = {
+        source: newIncome.source,
+        description: newIncome.description,
+        amount: String(newIncome.amount),
+        taxDeduction: String(newIncome.taxDeduction || 0),
+        date: newIncome.date instanceof Date ? newIncome.date.toISOString() : newIncome.date,
+        category: newIncome.category,
+        remarks: newIncome.remarks,
+        month: newIncome.month,
+        year: newIncome.year,
+      }
+
+      const res = await fetch('/api/income', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomePayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to save income')
+      
+      const savedIncome = await res.json()
+      setIncome(prev => [...prev, savedIncome])
+      
+      if (window.toast) {
+        window.toast('Income added successfully!', 'success')
+      }
+    } catch (error) {
+      console.error('Error adding income:', error)
+      if (window.toast) {
+        window.toast('Failed to save income', 'error')
+      }
     }
   }
 
-  const handleEditIncome = (updatedIncome: Partial<Income>) => {
-    setIncome(prev => 
-      prev.map(item => 
-        item.id === editingIncome?.id 
-          ? { ...item, ...updatedIncome, updatedAt: new Date() }
-          : item
+  const handleEditIncome = async (updatedIncome: Partial<Income>) => {
+    try {
+      if (!editingIncome) return
+
+      const incomePayload = {
+        source: updatedIncome.source,
+        description: updatedIncome.description,
+        amount: String(updatedIncome.amount),
+        taxDeduction: String(updatedIncome.taxDeduction || 0),
+        date: updatedIncome.date instanceof Date ? updatedIncome.date.toISOString() : updatedIncome.date,
+        category: updatedIncome.category,
+        remarks: updatedIncome.remarks,
+        month: updatedIncome.month,
+        year: updatedIncome.year,
+      }
+
+      const res = await fetch(`/api/income/${editingIncome.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomePayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to update income')
+
+      const savedIncome = await res.json()
+      setIncome(prev => 
+        prev.map(item => 
+          item.id === editingIncome.id ? savedIncome : item
+        )
       )
-    )
-    setEditingIncome(undefined)
-    
-    if (window.toast) {
-      window.toast('Income updated successfully!', 'success')
+      setEditingIncome(undefined)
+      
+      if (window.toast) {
+        window.toast('Income updated successfully!', 'success')
+      }
+    } catch (error) {
+      console.error('Error updating income:', error)
+      if (window.toast) {
+        window.toast('Failed to update income', 'error')
+      }
     }
   }
 
-  const handleDeleteIncome = (incomeId: string) => {
-    setIncome(prev => prev.filter(item => item.id !== incomeId))
-    
-    if (window.toast) {
-      window.toast('Income deleted successfully!', 'success')
+  const handleDeleteIncome = async (incomeId: string) => {
+    try {
+      const res = await fetch(`/api/income/${incomeId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete income')
+      
+      setIncome(prev => prev.filter(item => item.id !== incomeId))
+      
+      if (window.toast) {
+        window.toast('Income deleted successfully!', 'success')
+      }
+    } catch (error) {
+      console.error('Error deleting income:', error)
+      if (window.toast) {
+        window.toast('Failed to delete income', 'error')
+      }
     }
   }
 

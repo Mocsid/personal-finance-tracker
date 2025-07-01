@@ -27,9 +27,10 @@ export function RecurringBillManager({ onGenerateBills }: RecurringBillManagerPr
   useEffect(() => {
     async function fetchTemplates() {
       try {
-        // Note: You'll need to create an API endpoint for bill templates
-        // For now, we'll start with empty templates since the API doesn't exist yet
-        setTemplates([])
+        const res = await fetch('/api/bill-templates')
+        if (!res.ok) throw new Error('Failed to fetch templates')
+        const data = await res.json()
+        setTemplates(data || [])
       } catch (error) {
         console.error('Error fetching bill templates:', error)
         setTemplates([])
@@ -39,56 +40,141 @@ export function RecurringBillManager({ onGenerateBills }: RecurringBillManagerPr
     fetchTemplates()
   }, [])
 
-  const handleAddTemplate = (newTemplate: Partial<BillTemplate>) => {
-    const template: BillTemplate = {
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true,
-      ...newTemplate
-    } as BillTemplate
-    
-    setTemplates(prev => [...prev, template])
-    
-    if (window.toast) {
-      window.toast('Recurring bill template created!', 'success')
+  const handleAddTemplate = async (newTemplate: Partial<BillTemplate>) => {
+    try {
+      const templatePayload = {
+        name: newTemplate.name,
+        description: newTemplate.description,
+        amount: String(newTemplate.amount),
+        dueDay: String(newTemplate.dueDay),
+        category: newTemplate.category,
+        isActive: newTemplate.isActive !== undefined ? newTemplate.isActive : true,
+      }
+
+      const res = await fetch('/api/bill-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templatePayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to save template')
+      
+      const savedTemplate = await res.json()
+      setTemplates(prev => [...prev, savedTemplate])
+      
+      if (window.toast) {
+        window.toast('Recurring bill template created!', 'success')
+      }
+    } catch (error) {
+      console.error('Error adding template:', error)
+      if (window.toast) {
+        window.toast('Failed to save template', 'error')
+      }
     }
   }
 
-  const handleEditTemplate = (updatedTemplate: Partial<BillTemplate>) => {
-    setTemplates(prev => 
-      prev.map(template => 
-        template.id === editingTemplate?.id 
-          ? { ...template, ...updatedTemplate, updatedAt: new Date() }
-          : template
+  const handleEditTemplate = async (updatedTemplate: Partial<BillTemplate>) => {
+    try {
+      if (!editingTemplate) return
+
+      const templatePayload = {
+        name: updatedTemplate.name,
+        description: updatedTemplate.description,
+        amount: String(updatedTemplate.amount),
+        dueDay: String(updatedTemplate.dueDay),
+        category: updatedTemplate.category,
+        isActive: updatedTemplate.isActive,
+      }
+
+      const res = await fetch(`/api/bill-templates/${editingTemplate.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templatePayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to update template')
+
+      const savedTemplate = await res.json()
+      setTemplates(prev => 
+        prev.map(template => 
+          template.id === editingTemplate.id ? savedTemplate : template
+        )
       )
-    )
-    setEditingTemplate(undefined)
-    
-    if (window.toast) {
-      window.toast('Recurring bill template updated!', 'success')
+      setEditingTemplate(undefined)
+      
+      if (window.toast) {
+        window.toast('Recurring bill template updated!', 'success')
+      }
+    } catch (error) {
+      console.error('Error updating template:', error)
+      if (window.toast) {
+        window.toast('Failed to update template', 'error')
+      }
     }
   }
 
-  const handleDeleteTemplate = (templateId: string) => {
-    setTemplates(prev => prev.filter(template => template.id !== templateId))
-    
-    if (window.toast) {
-      window.toast('Recurring bill template deleted!', 'success')
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const res = await fetch(`/api/bill-templates/${templateId}`, { 
+        method: 'DELETE' 
+      })
+      if (!res.ok) throw new Error('Failed to delete template')
+      
+      setTemplates(prev => prev.filter(template => template.id !== templateId))
+      
+      if (window.toast) {
+        window.toast('Recurring bill template deleted!', 'success')
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error)
+      if (window.toast) {
+        window.toast('Failed to delete template', 'error')
+      }
     }
   }
 
-  const toggleTemplateStatus = (templateId: string) => {
-    setTemplates(prev => 
-      prev.map(template => 
-        template.id === templateId 
-          ? { ...template, isActive: !template.isActive, updatedAt: new Date() }
-          : template
+  const toggleTemplateStatus = async (templateId: string) => {
+    try {
+      const template = templates.find(t => t.id === templateId)
+      if (!template) return
+
+      const updatedTemplate = {
+        ...template,
+        isActive: !template.isActive,
+      }
+
+      const templatePayload = {
+        name: updatedTemplate.name,
+        description: updatedTemplate.description,
+        amount: String(updatedTemplate.amount),
+        dueDay: String(updatedTemplate.dueDay),
+        category: updatedTemplate.category,
+        isActive: updatedTemplate.isActive,
+      }
+
+      const res = await fetch(`/api/bill-templates/${templateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templatePayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to update template')
+
+      const savedTemplate = await res.json()
+      setTemplates(prev => 
+        prev.map(tmpl => 
+          tmpl.id === templateId ? savedTemplate : tmpl
+        )
       )
-    )
-    
-    if (window.toast) {
-      window.toast('Template status updated!', 'info')
+      
+      if (window.toast) {
+        window.toast('Template status updated!', 'info')
+      }
+    } catch (error) {
+      console.error('Error updating template status:', error)
+      if (window.toast) {
+        window.toast('Failed to update template status', 'error')
+      }
     }
   }
 

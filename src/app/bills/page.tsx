@@ -80,6 +80,23 @@ export default function BillsPage() {
     fetchBills()
   }, [selectedMonth, selectedYear])
 
+  // Fetch bill templates from API
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const res = await fetch('/api/bill-templates')
+        if (res.ok) {
+          const data = await res.json()
+          setTemplates(data || [])
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error)
+        setTemplates([])
+      }
+    }
+    fetchTemplates()
+  }, [])
+
   // Filter bills based on month/year and search/filter criteria
   useEffect(() => {
     let filtered = bills.filter(bill => 
@@ -152,27 +169,78 @@ export default function BillsPage() {
     } catch (e) {
       if (window.toast) window.toast('Failed to save bill', 'error')
     }
-    // If this is a recurring bill, also create a template (local only)
+    // If this is a recurring bill, also create a template
     if (newBill.createTemplate && newBill.templateData) {
-      const template: BillTemplate = {
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ...newBill.templateData
-      } as BillTemplate
-      setTemplates(prev => [...prev, template])
+      try {
+        const templatePayload = {
+          name: newBill.templateData.name,
+          description: newBill.templateData.description,
+          amount: String(newBill.templateData.amount),
+          dueDay: String(newBill.templateData.dueDay),
+          category: newBill.templateData.category,
+          isActive: newBill.templateData.isActive !== undefined ? newBill.templateData.isActive : true,
+        }
+
+        const templateRes = await fetch('/api/bill-templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(templatePayload),
+        })
+
+        if (templateRes.ok) {
+          const savedTemplate = await templateRes.json()
+          setTemplates(prev => [...prev, savedTemplate])
+          if (window.toast) {
+            window.toast('Bill and template created successfully!', 'success')
+          }
+        }
+      } catch (error) {
+        console.error('Error creating template:', error)
+        if (window.toast) {
+          window.toast('Bill saved, but failed to create template', 'error')
+        }
+      }
     }
   }
 
-  const handleGenerateBills = (newBills: Partial<Bill>[]) => {
-    const billsToAdd: Bill[] = newBills.map(billData => ({
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...billData
-    })) as Bill[]
-    
-    setBills(prev => [...prev, ...billsToAdd])
+  const handleGenerateBills = async (newBills: Partial<Bill>[]) => {
+    try {
+      const savedBills: Bill[] = []
+      
+      for (const billData of newBills) {
+        const billPayload = {
+          name: billData.name,
+          amount: String(billData.amount),
+          dueDate: billData.dueDate instanceof Date ? billData.dueDate.toISOString() : billData.dueDate,
+          category: billData.category,
+          remarks: billData.remarks,
+          month: billData.month,
+          year: billData.year,
+        }
+
+        const res = await fetch('/api/bills', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(billPayload),
+        })
+
+        if (res.ok) {
+          const savedBill = await res.json()
+          savedBills.push(savedBill)
+        }
+      }
+      
+      setBills(prev => [...prev, ...savedBills])
+      
+      if (window.toast) {
+        window.toast(`Generated ${savedBills.length} bills successfully!`, 'success')
+      }
+    } catch (error) {
+      console.error('Error generating bills:', error)
+      if (window.toast) {
+        window.toast('Failed to generate some bills', 'error')
+      }
+    }
   }
 
   const handleEditBill = async (updatedBill: Partial<Bill>) => {
