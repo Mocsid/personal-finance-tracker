@@ -10,57 +10,31 @@ export default function ExportPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Mock data - replace with actual API calls
-    const mockBills: Bill[] = [
-      {
-        id: '1',
-        name: 'Rent',
-        amount: 1200,
-        dueDate: new Date(2025, 5, 1),
-        status: 'PAID',
-        category: 'Housing',
-        remarks: 'Paid via bank transfer',
-        month: 6,
-        year: 2025,
-        paidDate: new Date(2025, 4, 30),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        name: 'Electricity',
-        amount: 150,
-        dueDate: new Date(2025, 5, 15),
-        status: 'UNPAID',
-        category: 'Utilities',
-        month: 6,
-        year: 2025,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]
+    async function fetchAllData() {
+      setLoading(true)
+      try {
+        // Fetch all bills and income data (across all months/years)
+        const [billsRes, incomeRes] = await Promise.all([
+          fetch('/api/bills'),
+          fetch('/api/income')
+        ])
+        
+        const [billsData, incomeData] = await Promise.all([
+          billsRes.json(),
+          incomeRes.json()
+        ])
+        
+        setBills(billsData || [])
+        setIncome(incomeData || [])
+      } catch (error) {
+        console.error('Error fetching export data:', error)
+        setBills([])
+        setIncome([])
+      }
+      setLoading(false)
+    }
 
-    const mockIncome: Income[] = [
-      {
-        id: '1',
-        source: 'TechCorp Inc.',
-        description: 'Monthly salary',
-        amount: 5000,
-        taxDeduction: 1000,
-        netAmount: 4000,
-        date: new Date(2025, 5, 1),
-        month: 6,
-        year: 2025,
-        category: 'Salary',
-        remarks: 'Regular monthly payment',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]
-
-    setBills(mockBills)
-    setIncome(mockIncome)
-    setLoading(false)
+    fetchAllData()
   }, [])
 
   if (loading) {

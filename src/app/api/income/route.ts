@@ -5,14 +5,21 @@ import { getCurrentMonth, getCurrentYear } from '@/lib/utils'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const month = parseInt(searchParams.get('month') || getCurrentMonth().toString())
-    const year = parseInt(searchParams.get('year') || getCurrentYear().toString())
+    const month = searchParams.get('month')
+    const year = searchParams.get('year')
+
+    let whereClause = {}
+    
+    // If month and year are provided, filter by them
+    if (month && year) {
+      whereClause = {
+        month: parseInt(month),
+        year: parseInt(year),
+      }
+    }
 
     const income = await prisma.income.findMany({
-      where: {
-        month,
-        year,
-      },
+      where: whereClause,
       orderBy: {
         date: 'desc',
       },

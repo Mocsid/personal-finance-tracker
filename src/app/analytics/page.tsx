@@ -12,53 +12,44 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Mock data for analytics
-    const mockBills: Bill[] = [
-      {
-        id: '1', name: 'Rent', amount: 1200, dueDate: new Date(2025, 5, 1), status: 'PAID',
-        category: 'Housing', month: 6, year: 2025, createdAt: new Date(), updatedAt: new Date(),
-      },
-      {
-        id: '2', name: 'Electricity', amount: 150, dueDate: new Date(2025, 5, 15), status: 'UNPAID',
-        category: 'Utilities', month: 6, year: 2025, createdAt: new Date(), updatedAt: new Date(),
-      },
-      {
-        id: '3', name: 'Internet', amount: 80, dueDate: new Date(2025, 5, 20), status: 'PAID',
-        category: 'Utilities', month: 6, year: 2025, createdAt: new Date(), updatedAt: new Date(),
-      },
-      // Previous month data
-      {
-        id: '4', name: 'Rent', amount: 1200, dueDate: new Date(2025, 4, 1), status: 'PAID',
-        category: 'Housing', month: 5, year: 2025, createdAt: new Date(), updatedAt: new Date(),
-      },
-      {
-        id: '5', name: 'Electricity', amount: 140, dueDate: new Date(2025, 4, 15), status: 'PAID',
-        category: 'Utilities', month: 5, year: 2025, createdAt: new Date(), updatedAt: new Date(),
-      },
-    ]
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const currentMonth = new Date().getMonth() + 1
+        const currentYear = new Date().getFullYear()
+        const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1
+        const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear
 
-    const mockIncome: Income[] = [
-      {
-        id: '1', source: 'TechCorp Inc.', amount: 5000, taxDeduction: 1000, netAmount: 4000,
-        date: new Date(2025, 5, 1), month: 6, year: 2025, category: 'Salary',
-        createdAt: new Date(), updatedAt: new Date(),
-      },
-      {
-        id: '2', source: 'Freelance', amount: 1500, taxDeduction: 150, netAmount: 1350,
-        date: new Date(2025, 5, 15), month: 6, year: 2025, category: 'Freelance',
-        createdAt: new Date(), updatedAt: new Date(),
-      },
-      // Previous month
-      {
-        id: '3', source: 'TechCorp Inc.', amount: 5000, taxDeduction: 1000, netAmount: 4000,
-        date: new Date(2025, 4, 1), month: 5, year: 2025, category: 'Salary',
-        createdAt: new Date(), updatedAt: new Date(),
-      },
-    ]
+        // Fetch both current and previous month data for comparison
+        const [currentBillsRes, currentIncomeRes, previousBillsRes, previousIncomeRes] = await Promise.all([
+          fetch(`/api/bills?month=${currentMonth}&year=${currentYear}`),
+          fetch(`/api/income?month=${currentMonth}&year=${currentYear}`),
+          fetch(`/api/bills?month=${previousMonth}&year=${previousYear}`),
+          fetch(`/api/income?month=${previousMonth}&year=${previousYear}`)
+        ])
+        
+        const [currentBillsData, currentIncomeData, previousBillsData, previousIncomeData] = await Promise.all([
+          currentBillsRes.json(),
+          currentIncomeRes.json(),
+          previousBillsRes.json(),
+          previousIncomeRes.json()
+        ])
+        
+        // Combine current and previous month data
+        const allBills = [...(currentBillsData || []), ...(previousBillsData || [])]
+        const allIncome = [...(currentIncomeData || []), ...(previousIncomeData || [])]
+        
+        setBills(allBills)
+        setIncome(allIncome)
+      } catch (error) {
+        console.error('Error fetching analytics data:', error)
+        setBills([])
+        setIncome([])
+      }
+      setLoading(false)
+    }
 
-    setBills(mockBills)
-    setIncome(mockIncome)
-    setLoading(false)
+    fetchData()
   }, [])
 
   if (loading) {
