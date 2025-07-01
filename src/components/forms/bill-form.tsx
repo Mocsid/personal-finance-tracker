@@ -8,12 +8,12 @@ import { Select } from '../ui/select'
 import { Textarea } from '../ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { BILL_CATEGORIES, BILL_STATUSES } from '@/lib/constants'
-import type { Bill, BillStatus } from '@/types'
+import type { Bill, BillStatus, ExtendedBill } from '@/types'
 
 interface BillFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (bill: Partial<Bill>) => void
+  onSubmit: (bill: Partial<ExtendedBill>) => void
   bill?: Bill
   mode: 'add' | 'edit'
 }
@@ -22,7 +22,7 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
   const [formData, setFormData] = useState({
     name: bill?.name || '',
     amount: bill?.amount?.toString() || '',
-    dueDate: bill?.dueDate ? bill.dueDate.toISOString().split('T')[0] : 
+    dueDate: bill?.dueDate ? new Date(bill.dueDate).toISOString().split('T')[0] : 
       new Date().toISOString().split('T')[0],
     category: bill?.category || 'Housing',
     status: bill?.status || 'UNPAID',
@@ -35,7 +35,7 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
     
     const dueDate = new Date(formData.dueDate)
     
-    const billData: Partial<Bill> = {
+    const billData: Partial<ExtendedBill> = {
       ...bill,
       name: formData.name,
       amount: parseFloat(formData.amount),
@@ -50,10 +50,8 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
 
     // If this is a new recurring bill, also create a template
     if (mode === 'add' && formData.isRecurring) {
-      // This would need to be handled by the parent component
-      // to create both a bill and a template
-      (billData as any).createTemplate = true
-      (billData as any).templateData = {
+      billData.createTemplate = true
+      billData.templateData = {
         name: formData.name,
         description: formData.remarks,
         amount: parseFloat(formData.amount),

@@ -5,14 +5,21 @@ import { getCurrentMonth, getCurrentYear } from '@/lib/utils'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const month = parseInt(searchParams.get('month') || getCurrentMonth().toString())
-    const year = parseInt(searchParams.get('year') || getCurrentYear().toString())
+    const month = searchParams.get('month')
+    const year = searchParams.get('year')
+
+    let whereClause = {}
+    
+    // If month and year are provided, filter by them
+    if (month && year) {
+      whereClause = {
+        month: parseInt(month),
+        year: parseInt(year),
+      }
+    }
 
     const income = await prisma.income.findMany({
-      where: {
-        month,
-        year,
-      },
+      where: whereClause,
       orderBy: {
         date: 'desc',
       },
@@ -57,6 +64,24 @@ export async function POST(request: NextRequest) {
     console.error('Error creating income:', error)
     return NextResponse.json(
       { error: 'Failed to create income' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) {
+      return NextResponse.json({ error: 'Missing income id' }, { status: 400 })
+    }
+    await prisma.income.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting income:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete income' },
       { status: 500 }
     )
   }

@@ -35,56 +35,23 @@ export default function IncomePage() {
     return () => window.removeEventListener('newIncome', handleNewIncome)
   }, [])
 
-  // Mock data for now - replace with API calls later
+  // Fetch income data from API
   useEffect(() => {
-    const mockIncome: Income[] = [
-      {
-        id: '1',
-        source: 'TechCorp Inc.',
-        description: 'Monthly salary',
-        amount: 5000,
-        taxDeduction: 1000,
-        netAmount: 4000,
-        date: new Date(2025, 5, 1),
-        month: 6,
-        year: 2025,
-        category: 'Salary',
-        remarks: 'Regular monthly payment',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        source: 'Freelance Client A',
-        description: 'Web development project',
-        amount: 1500,
-        taxDeduction: 150,
-        netAmount: 1350,
-        date: new Date(2025, 5, 15),
-        month: 6,
-        year: 2025,
-        category: 'Freelance',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '3',
-        source: 'Investment Returns',
-        description: 'Stock dividends',
-        amount: 800,
-        taxDeduction: 120,
-        netAmount: 680,
-        date: new Date(2025, 5, 20),
-        month: 6,
-        year: 2025,
-        category: 'Investment',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]
-    setIncome(mockIncome)
-    setLoading(false)
-  }, [])
+    async function fetchIncome() {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/income?month=${selectedMonth}&year=${selectedYear}`)
+        const data = await res.json()
+        setIncome(data || [])
+      } catch (error) {
+        console.error('Error fetching income:', error)
+        setIncome([])
+      }
+      setLoading(false)
+    }
+
+    fetchIncome()
+  }, [selectedMonth, selectedYear])
 
   // Filter income based on month/year and search/filter criteria
   useEffect(() => {
@@ -291,7 +258,7 @@ export default function IncomePage() {
           <SearchFilter
             onSearch={handleSearch}
             onFilter={handleFilter}
-            categories={INCOME_CATEGORIES}
+            categories={[...INCOME_CATEGORIES]}
             placeholder="Search income by source, description, or category..."
             showCategoryFilter={true}
             showStatusFilter={false}

@@ -28,7 +28,7 @@ model Bill {
   amount      Float
   dueDate     DateTime
   paidDate    DateTime?
-  status      BillStatus  @default(UNPAID)
+  status      String   @default("UNPAID")
   category    String
   remarks     String?
   month       Int         // 1-12
@@ -55,9 +55,9 @@ model Income {
   updatedAt       DateTime @updatedAt
 }
 
-enum BillStatus {
-  PAID
-  UNPAID
-  OVERDUE
-  PARTIAL
-}
+// enum BillStatus {
+//   PAID
+//   UNPAID
+//   OVERDUE
+//   PARTIAL
+// }

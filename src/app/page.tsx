@@ -10,23 +10,47 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { getMonthName, getCurrentMonth, getCurrentYear } from '@/lib/utils'
 import { Info, TrendingUp, Target } from 'lucide-react'
 import useLocalStorage from '@/hooks/use-local-storage'
-
-// This would normally come from your database
-const mockData = {
-  currentMonth: getCurrentMonth(),
-  currentYear: getCurrentYear(),
-  totalIncome: 5350, // Updated to match the new income data
-  totalBills: 1430,  // Updated to match the new bill data
-  paidBills: 1280,   // Rent + Internet
-  unpaidBills: 350,  // Electricity + Insurance
-  upcomingBills: 2,
-}
+import type { Bill, Income } from '@/types'
 
 export default function Dashboard() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useLocalStorage('hasCompletedOnboarding', false)
   const [userName] = useLocalStorage('userName', '')
   const [showWelcome, setShowWelcome] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [bills, setBills] = useState<Bill[]>([])
+  const [income, setIncome] = useState<Income[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const currentMonth = getCurrentMonth()
+  const currentYear = getCurrentYear()
+
+  // Fetch real data from APIs
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const [billsRes, incomeRes] = await Promise.all([
+          fetch(`/api/bills?month=${currentMonth}&year=${currentYear}`),
+          fetch(`/api/income?month=${currentMonth}&year=${currentYear}`)
+        ])
+        
+        const [billsData, incomeData] = await Promise.all([
+          billsRes.json(),
+          incomeRes.json()
+        ])
+        
+        setBills(billsData || [])
+        setIncome(incomeData || [])
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+        setBills([])
+        setIncome([])
+      }
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [currentMonth, currentYear])
 
   useEffect(() => {
     setMounted(true)
@@ -41,8 +65,23 @@ export default function Dashboard() {
     setHasCompletedOnboarding(true)
   }
 
-  const netAmount = mockData.totalIncome - mockData.totalBills
-  const paidPercentage = (mockData.paidBills / mockData.totalBills) * 100
+  // Calculate real financial summary data
+  const totalIncome = income.reduce((sum, item) => sum + item.netAmount, 0)
+  const totalBills = bills.reduce((sum, bill) => sum + bill.amount, 0)
+  const paidBills = bills.filter(bill => bill.status === 'PAID').reduce((sum, bill) => sum + bill.amount, 0)
+  const unpaidBills = bills.filter(bill => bill.status !== 'PAID').reduce((sum, bill) => sum + bill.amount, 0)
+  
+  // Count upcoming bills (due within next 7 days)
+  const today = new Date()
+  const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const upcomingBills = bills.filter(bill => 
+    bill.status !== 'PAID' && 
+    new Date(bill.dueDate) >= today && 
+    new Date(bill.dueDate) <= nextWeek
+  ).length
+
+  const netAmount = totalIncome - totalBills
+  const paidPercentage = totalBills > 0 ? (paidBills / totalBills) * 100 : 0
 
   const getGreeting = () => {
     if (!mounted) return 'Dashboard'
@@ -59,7 +98,7 @@ export default function Dashboard() {
 
   const healthLevel = getFinancialHealthLevel()
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -77,16 +116,16 @@ export default function Dashboard() {
             {hasCompletedOnboarding ? getGreeting() : 'Dashboard'}
           </h1>
           <p className="text-muted-foreground">
-            Financial overview for {getMonthName(mockData.currentMonth)} {mockData.currentYear}
+            Financial overview for {getMonthName(currentMonth)} {currentYear}
           </p>
         </div>
 
         <FinancialSummary
-          totalIncome={mockData.totalIncome}
-          totalBills={mockData.totalBills}
-          paidBills={mockData.paidBills}
-          unpaidBills={mockData.unpaidBills}
-          upcomingBills={mockData.upcomingBills}
+          totalIncome={totalIncome}
+          totalBills={totalBills}
+          paidBills={paidBills}
+          unpaidBills={unpaidBills}
+          upcomingBills={upcomingBills}
         />
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -121,12 +160,12 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold">
-                    {((mockData.totalIncome / mockData.totalBills) * 100).toFixed(0)}%
+                    {totalBills > 0 ? ((totalIncome / totalBills) * 100).toFixed(0) : '0'}%
                   </div>
                   <div className={`text-xs ${
-                    mockData.totalIncome > mockData.totalBills ? 'text-green-600' : 'text-red-600'
+                    totalIncome > totalBills ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {mockData.totalIncome > mockData.totalBills ? 'Healthy' : 'At Risk'}
+                    {totalIncome > totalBills ? 'Healthy' : 'At Risk'}
                   </div>
                 </div>
               </div>

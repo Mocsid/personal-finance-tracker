@@ -69,7 +69,7 @@ export function DataExport({ bills, income }: DataExportProps) {
         'Bill',
         `"${bill.name}"`,
         bill.amount,
-        bill.dueDate.toISOString().split('T')[0],
+        new Date(bill.dueDate).toISOString().split('T')[0],
         bill.status,
         bill.category,
         `"${bill.remarks || ''}"`
@@ -86,7 +86,7 @@ export function DataExport({ bills, income }: DataExportProps) {
         item.amount,
         item.taxDeduction,
         item.netAmount,
-        item.date.toISOString().split('T')[0],
+        new Date(item.date).toISOString().split('T')[0],
         item.category || '',
         `"${item.remarks || ''}"`
       ].join(','))

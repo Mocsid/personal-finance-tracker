@@ -26,7 +26,7 @@ export function IncomeForm({ open, onOpenChange, onSubmit, income, mode }: Incom
     amount: income?.amount?.toString() || '',
     taxPercentage: income?.amount && income?.taxDeduction ? 
       ((income.taxDeduction / income.amount) * 100).toString() : '',
-    date: income?.date ? income.date.toISOString().split('T')[0] : 
+    date: income?.date ? new Date(income.date).toISOString().split('T')[0] : 
       new Date().toISOString().split('T')[0],
     category: income?.category || 'Salary',
     remarks: income?.remarks || '',

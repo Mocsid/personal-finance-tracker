@@ -23,44 +23,20 @@ export function RecurringBillManager({ onGenerateBills }: RecurringBillManagerPr
     template: undefined
   })
 
-  // Mock data - replace with actual database calls
+  // Fetch templates from API
   useEffect(() => {
-    const mockTemplates: BillTemplate[] = [
-      {
-        id: '1',
-        name: 'Monthly Rent',
-        description: 'Apartment rent payment',
-        amount: 1200,
-        dueDay: 1,
-        category: 'Housing',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '2',
-        name: 'Internet Bill',
-        description: 'Monthly internet service',
-        amount: 80,
-        dueDay: 15,
-        category: 'Utilities',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '3',
-        name: 'Car Insurance',
-        description: 'Monthly car insurance premium',
-        amount: 150,
-        dueDay: 25,
-        category: 'Insurance',
-        isActive: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]
-    setTemplates(mockTemplates)
+    async function fetchTemplates() {
+      try {
+        // Note: You'll need to create an API endpoint for bill templates
+        // For now, we'll start with empty templates since the API doesn't exist yet
+        setTemplates([])
+      } catch (error) {
+        console.error('Error fetching bill templates:', error)
+        setTemplates([])
+      }
+    }
+
+    fetchTemplates()
   }, [])
 
   const handleAddTemplate = (newTemplate: Partial<BillTemplate>) => {
