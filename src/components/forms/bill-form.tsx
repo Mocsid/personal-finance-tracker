@@ -22,7 +22,7 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
   const [formData, setFormData] = useState({
     name: bill?.name || '',
     amount: bill?.amount?.toString() || '',
-    dueDate: bill?.dueDate ? bill.dueDate.toISOString().split('T')[0] : 
+    dueDate: bill?.dueDate ? new Date(bill.dueDate).toISOString().split('T')[0] : 
       new Date().toISOString().split('T')[0],
     category: bill?.category || 'Housing',
     status: bill?.status || 'UNPAID',
