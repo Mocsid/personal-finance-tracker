@@ -175,56 +175,133 @@ export default function BillsPage() {
     setBills(prev => [...prev, ...billsToAdd])
   }
 
-  const handleEditBill = (updatedBill: Partial<Bill>) => {
-    setBills(prev => 
-      prev.map(item => 
-        item.id === editingBill?.id 
-          ? { ...item, ...updatedBill, updatedAt: new Date() }
-          : item
+  const handleEditBill = async (updatedBill: Partial<Bill>) => {
+    try {
+      if (!editingBill) return
+
+      const billPayload = {
+        name: updatedBill.name,
+        amount: String(updatedBill.amount),
+        dueDate: updatedBill.dueDate instanceof Date ? updatedBill.dueDate.toISOString() : updatedBill.dueDate,
+        status: updatedBill.status,
+        category: updatedBill.category,
+        remarks: updatedBill.remarks,
+        paidDate: updatedBill.paidDate ? updatedBill.paidDate.toISOString() : null,
+      }
+
+      const res = await fetch(`/api/bills/${editingBill.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billPayload),
+      })
+
+      if (!res.ok) throw new Error('Failed to update bill')
+
+      const savedBill = await res.json()
+      setBills(prev => 
+        prev.map(item => 
+          item.id === editingBill.id ? savedBill : item
+        )
       )
-    )
-    setEditingBill(undefined)
-    
-    if (window.toast) {
-      window.toast('Bill updated successfully!', 'success')
+      setEditingBill(undefined)
+      
+      if (window.toast) {
+        window.toast('Bill updated successfully!', 'success')
+      }
+    } catch (error) {
+      console.error('Error updating bill:', error)
+      if (window.toast) {
+        window.toast('Failed to update bill', 'error')
+      }
     }
   }
 
   const handleDeleteBill = async (billId: string) => {
     try {
-      await fetch(`/api/bills?id=${billId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/bills/${billId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete bill')
+      
       setBills(prev => prev.filter(item => item.id !== billId))
       if (window.toast) window.toast('Bill deleted successfully!', 'success')
-    } catch (e) {
+    } catch (error) {
+      console.error('Error deleting bill:', error)
       if (window.toast) window.toast('Failed to delete bill', 'error')
     }
   }
 
-  const markAsPaid = (billId: string) => {
-    setBills(prev => 
-      prev.map(bill => 
-        bill.id === billId 
-          ? { ...bill, status: 'PAID' as BillStatus, paidDate: new Date(), updatedAt: new Date() }
-          : bill
+  const markAsPaid = async (billId: string) => {
+    try {
+      const bill = bills.find(b => b.id === billId)
+      if (!bill) return
+
+      const updatedBill = {
+        ...bill,
+        status: 'PAID',
+        paidDate: new Date().toISOString(),
+      }
+
+      const res = await fetch(`/api/bills/${billId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBill),
+      })
+
+      if (!res.ok) throw new Error('Failed to update bill')
+
+      setBills(prev => 
+        prev.map(bill => 
+          bill.id === billId 
+            ? { ...bill, status: 'PAID' as BillStatus, paidDate: new Date(), updatedAt: new Date() }
+            : bill
+        )
       )
-    )
-    
-    if (window.toast) {
-      window.toast('Bill marked as paid!', 'success')
+      
+      if (window.toast) {
+        window.toast('Bill marked as paid!', 'success')
+      }
+    } catch (error) {
+      console.error('Error marking bill as paid:', error)
+      if (window.toast) {
+        window.toast('Failed to mark bill as paid', 'error')
+      }
     }
   }
 
-  const markAsUnpaid = (billId: string) => {
-    setBills(prev => 
-      prev.map(bill => 
-        bill.id === billId 
-          ? { ...bill, status: 'UNPAID' as BillStatus, paidDate: undefined, updatedAt: new Date() }
-          : bill
+  const markAsUnpaid = async (billId: string) => {
+    try {
+      const bill = bills.find(b => b.id === billId)
+      if (!bill) return
+
+      const updatedBill = {
+        ...bill,
+        status: 'UNPAID',
+        paidDate: null,
+      }
+
+      const res = await fetch(`/api/bills/${billId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBill),
+      })
+
+      if (!res.ok) throw new Error('Failed to update bill')
+
+      setBills(prev => 
+        prev.map(bill => 
+          bill.id === billId 
+            ? { ...bill, status: 'UNPAID' as BillStatus, paidDate: undefined, updatedAt: new Date() }
+            : bill
+        )
       )
-    )
-    
-    if (window.toast) {
-      window.toast('Bill marked as unpaid!', 'info')
+      
+      if (window.toast) {
+        window.toast('Bill marked as unpaid!', 'info')
+      }
+    } catch (error) {
+      console.error('Error marking bill as unpaid:', error)
+      if (window.toast) {
+        window.toast('Failed to mark bill as unpaid', 'error')
+      }
     }
   }
 
@@ -364,7 +441,7 @@ export default function BillsPage() {
           <SearchFilter
             onSearch={handleSearch}
             onFilter={handleFilter}
-            categories={BILL_CATEGORIES}
+            categories={[...BILL_CATEGORIES]}
             placeholder="Search bills by name, category, or remarks..."
             showCategoryFilter={true}
             showStatusFilter={true}
