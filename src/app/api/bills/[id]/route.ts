@@ -8,7 +8,7 @@ export async function PUT(
   try {
     const { id } = params
     const body = await request.json()
-    const { name, amount, dueDate, status, category, remarks, paidDate } = body
+    const { name, amount, dueDate, status, category, remarks, paidDate, createTemplate, templateData } = body
 
     const updateData: any = {
       name,
@@ -32,7 +32,41 @@ export async function PUT(
       data: updateData,
     })
 
-    return NextResponse.json(bill)
+    // If requested, create or update a recurring template
+    let template = null
+    if (createTemplate && templateData) {
+      // Try to find an existing template for this bill (by name, amount, dueDay, category)
+      const existingTemplate = await prisma.billTemplate.findFirst({
+        where: {
+          name: templateData.name,
+          amount: parseFloat(templateData.amount),
+          dueDay: parseInt(templateData.dueDay),
+          category: templateData.category,
+        },
+      })
+      if (existingTemplate) {
+        template = await prisma.billTemplate.update({
+          where: { id: existingTemplate.id },
+          data: {
+            ...templateData,
+            amount: parseFloat(templateData.amount),
+            dueDay: parseInt(templateData.dueDay),
+            isActive: true,
+          },
+        })
+      } else {
+        template = await prisma.billTemplate.create({
+          data: {
+            ...templateData,
+            amount: parseFloat(templateData.amount),
+            dueDay: parseInt(templateData.dueDay),
+            isActive: true,
+          },
+        })
+      }
+    }
+
+    return NextResponse.json({ ...bill, template })
   } catch (error) {
     console.error('Error updating bill:', error)
     return NextResponse.json(

@@ -243,7 +243,7 @@ export default function BillsPage() {
     }
   }
 
-  const handleEditBill = async (updatedBill: Partial<Bill>) => {
+  const handleEditBill = async (updatedBill: Partial<Bill> & { createTemplate?: boolean; templateData?: any }) => {
     try {
       if (!editingBill) return
 
@@ -272,6 +272,58 @@ export default function BillsPage() {
         )
       )
       setEditingBill(undefined)
+      
+      // If this is a recurring bill, also create or update a template
+      if (updatedBill.createTemplate && updatedBill.templateData) {
+        try {
+          // Try to find an existing template for this bill (by name, amount, dueDay, category)
+          const existingTemplate = templates.find(t =>
+            t.name === updatedBill.templateData.name &&
+            t.amount === updatedBill.templateData.amount &&
+            t.dueDay === updatedBill.templateData.dueDay &&
+            t.category === updatedBill.templateData.category
+          )
+          const templatePayload = {
+            name: updatedBill.templateData.name,
+            description: updatedBill.templateData.description,
+            amount: String(updatedBill.templateData.amount),
+            dueDay: String(updatedBill.templateData.dueDay),
+            category: updatedBill.templateData.category,
+            isActive: true,
+          }
+          let templateRes
+          if (existingTemplate) {
+            templateRes = await fetch(`/api/bill-templates/${existingTemplate.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(templatePayload),
+            })
+          } else {
+            templateRes = await fetch('/api/bill-templates', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(templatePayload),
+            })
+          }
+          if (templateRes.ok) {
+            const savedTemplate = await templateRes.json()
+            setTemplates(prev => {
+              // Replace or add
+              const idx = prev.findIndex(t => t.id === savedTemplate.id)
+              if (idx !== -1) {
+                const copy = [...prev]
+                copy[idx] = savedTemplate
+                return copy
+              }
+              return [...prev, savedTemplate]
+            })
+            if (window.toast) window.toast('Recurring template created/updated!', 'success')
+          }
+        } catch (error) {
+          console.error('Error creating/updating template:', error)
+          if (window.toast) window.toast('Bill updated, but failed to create/update template', 'error')
+        }
+      }
       
       if (window.toast) {
         window.toast('Bill updated successfully!', 'success')

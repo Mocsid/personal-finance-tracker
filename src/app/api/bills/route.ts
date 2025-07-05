@@ -38,7 +38,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, amount, dueDate, category, remarks, month, year } = body
+    const { name, amount, dueDate, category, remarks, month, year, status, paidDate } = body
+
+    let billStatus = status || 'UNPAID'
+    let billPaidDate: Date | null = null
+    if (billStatus === 'PAID') {
+      billPaidDate = paidDate ? new Date(paidDate) : new Date()
+    }
 
     const bill = await prisma.bill.create({
       data: {
@@ -49,7 +55,8 @@ export async function POST(request: NextRequest) {
         remarks,
         month: month || getCurrentMonth(),
         year: year || getCurrentYear(),
-        status: 'UNPAID',
+        status: billStatus,
+        paidDate: billPaidDate,
       },
     })
 

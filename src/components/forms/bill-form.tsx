@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
@@ -29,6 +29,21 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
     remarks: bill?.remarks || '',
     isRecurring: false, // New field for recurring bills
   })
+
+  // Add this effect to update formData when editing a bill
+  useEffect(() => {
+    if (mode === 'edit' && bill) {
+      setFormData({
+        name: bill.name || '',
+        amount: bill.amount?.toString() || '',
+        dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        category: bill.category || 'Housing',
+        status: bill.status || 'UNPAID',
+        remarks: bill.remarks || '',
+        isRecurring: false,
+      })
+    }
+  }, [bill, mode])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -161,20 +176,19 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
             </div>
           </div>
 
-          {mode === 'add' && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isRecurring"
-                checked={formData.isRecurring}
-                onChange={(e) => handleChange('isRecurring', e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="isRecurring" className="text-sm">
-                This bill repeats every month (create recurring template)
-              </Label>
-            </div>
-          )}
+          {/* Show recurring checkbox for both add and edit */}
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="isRecurring"
+              checked={formData.isRecurring}
+              onChange={(e) => handleChange('isRecurring', e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <Label htmlFor="isRecurring" className="text-sm">
+              This bill repeats every month (create or update recurring template)
+            </Label>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="remarks">Remarks</Label>
@@ -187,12 +201,11 @@ export function BillForm({ open, onOpenChange, onSubmit, bill, mode }: BillFormP
             />
           </div>
 
-          {formData.isRecurring && mode === 'add' && (
+          {formData.isRecurring && (
             <div className="bg-blue-50 border border-blue-200 p-3 rounded-md text-sm">
               <div className="font-medium text-blue-800 mb-1">Recurring Bill</div>
               <div className="text-blue-700">
-                This will create both a bill for this month and a template for automatic 
-                generation of future bills on the {new Date(formData.dueDate).getDate()}{new Date(formData.dueDate).getDate() === 1 ? 'st' : new Date(formData.dueDate).getDate() === 2 ? 'nd' : new Date(formData.dueDate).getDate() === 3 ? 'rd' : 'th'} of each month.
+                This will create or update a template for automatic generation of future bills on the {new Date(formData.dueDate).getDate()}{new Date(formData.dueDate).getDate() === 1 ? 'st' : new Date(formData.dueDate).getDate() === 2 ? 'nd' : new Date(formData.dueDate).getDate() === 3 ? 'rd' : 'th'} of each month.
               </div>
             </div>
           )}
