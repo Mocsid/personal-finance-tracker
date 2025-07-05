@@ -11,6 +11,9 @@ export const BILL_CATEGORIES = [
   'Insurance',
   'Entertainment',
   'Subscriptions',
+  'Mauricio',
+  'Anna',
+  'Maura',
   'Other'
 ] as const
 
